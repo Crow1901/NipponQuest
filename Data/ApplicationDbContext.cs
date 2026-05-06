@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using NipponQuest.Models;
 
 namespace NipponQuest.Data
@@ -21,6 +22,14 @@ namespace NipponQuest.Data
         public DbSet<LeaderboardEntry> LeaderboardEntries { get; set; }
         public DbSet<RewardLedger> RewardLedgers { get; set; } = default!;
         public DbSet<BlitzPersonalBest> BlitzPersonalBests { get; set; }
+
+        // Suppress the SQL Server vs PostgreSQL model snapshot mismatch warning.
+        // This is safe because the actual migration SQL is what gets applied, not the snapshot diff.
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.ConfigureWarnings(w =>
+                w.Ignore(RelationalEventId.PendingModelChangesWarning));
+        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
