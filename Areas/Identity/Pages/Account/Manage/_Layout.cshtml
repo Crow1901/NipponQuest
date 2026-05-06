@@ -1,0 +1,132 @@
+﻿<style>
+    /* --- NIPPON QUEST GLOBAL UI STYLES --- */
+    body { background-color: #f8f9fa; }
+    .fw-black { font-weight: 900; }
+    .tracking-tight { letter-spacing: -0.5px; }
+    .tracking-wider { letter-spacing: 1px; }
+    .text-primary-blue { color: #007bff !important; }
+    .bg-primary-blue { background-color: #007bff !important; }
+    
+    /* Buttons */
+    .btn-primary-blue { background-color: #007bff; color: white; border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-primary-blue:hover { background-color: #0056b3; color: white; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,123,255,0.2) !important; }
+    .btn-white { background: #fff; border: 1px solid #dee2e6; transition: all 0.2s; }
+    .btn-white:hover { background: #f8f9fa; }
+    
+    .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
+    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+    .hover-blue:hover { color: #007bff !important; border-color: #007bff !important; }
+
+    /* Custom Form Inputs */
+    .custom-input {
+        padding: 0.8rem 1.25rem; 
+        transition: all 0.2s;
+    }
+    .custom-input:focus {
+        border-color: #007bff !important;
+        box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.15) !important;
+        outline: none;
+        background-color: #ffffff !important;
+    }
+
+    /* Sidebar Styling */
+    .hq-nav .nav-link {
+        color: #6c757d;
+        font-weight: bold;
+        border-radius: 1rem;
+        padding: 0.8rem 1.5rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+    .hq-nav .nav-link:hover:not(.active) {
+        background-color: #f8f9fa;
+        color: #007bff;
+    }
+    .hq-nav .nav-link.active {
+        background-color: #007bff;
+        color: white;
+        font-weight: 900;
+        box-shadow: 0 4px 6px rgba(0,123,255,0.2);
+    }
+</style>
+
+@{
+    if (ViewData.TryGetValue("ParentLayout", out var parentLayout) && parentLayout != null)
+    {
+        Layout = parentLayout.ToString();
+    }
+    else
+    {
+        Layout = "/Views/Shared/_Layout.cshtml";
+    }
+}
+
+<div class="container py-5 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <!-- Unified HQ Header -->
+            <div class="mb-4">
+                <h1 class="fw-black text-dark m-0 text-uppercase tracking-tight d-flex align-items-center flex-wrap gap-2" style="font-size: 2.5rem; letter-spacing: -1px;">
+                    <span>ACCOUNT <span class="text-primary-blue">HQ</span></span>
+                    
+                    <!-- INFO BUBBLE BUTTON -->
+                    <button class="btn btn-white rounded-circle shadow-sm p-0 d-flex align-items-center justify-content-center text-muted hover-blue ms-2"
+                            style="width: 32px; height: 32px; border: 1px solid #dee2e6; background: #fff;"
+                            data-bs-toggle="modal" data-bs-target="#hqGuideModal"
+                            title="HQ Info">
+                        <i class="bi bi-info-lg fs-5 fw-black"></i>
+                    </button>
+                </h1>
+                <p class="text-muted fw-bold mt-1">Manage your legendary identity and security settings.</p>
+            </div>
+
+            <!-- Main Card Container -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-5">
+                <div class="row g-0">
+                    <!-- Sidebar Area -->
+                    <div class="col-md-4 col-lg-3 border-end border-light-subtle p-4 bg-light bg-opacity-50">
+                        <partial name="_ManageNav" />
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="col-md-8 col-lg-9 p-4 p-md-5">
+                        @RenderBody()
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- HQ Guide Modal -->
+<div class="modal fade" id="hqGuideModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="bg-primary-blue p-4 text-white d-flex justify-content-between align-items-center">
+                <h4 class="fw-black m-0 text-uppercase tracking-wider">
+                    <i class="bi bi-shield-lock-fill me-2"></i> Account HQ Guide
+                </h4>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5">
+                <div class="mb-4">
+                    <h5 class="fw-black text-dark text-uppercase tracking-wider border-bottom pb-2 mb-3">Your Identity</h5>
+                    <p class="text-muted fw-bold mb-0">This is your command center. Update your email, secure your password, and manage your two-factor authentication to keep your progress safe.</p>
+                </div>
+                <div class="mb-2">
+                    <h5 class="fw-black text-dark text-uppercase tracking-wider border-bottom pb-2 mb-3">Data Privacy</h5>
+                    <p class="text-muted fw-bold mb-0">You have full control over your data. Use the Data Privacy tab to download your personal information or permanently delete your account.</p>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light p-4 justify-content-center">
+                <button type="button" class="btn btn-primary-blue rounded-pill px-5 py-2 fw-black shadow-sm text-uppercase tracking-wider hover-lift" data-bs-dismiss="modal">UNDERSTOOD</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}

@@ -1,0 +1,184 @@
+﻿<style>
+    /* Premium Tab Navigation Styles - Included here so Katakana formats identically */
+    .kana-nav .nav-link {
+        color: #64748b; /* Grey inactive text */
+        font-weight: 700;
+        border-radius: 50rem;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border: 2px solid transparent;
+        font-size: 0.875rem;
+    }
+    .kana-nav .nav-link:hover:not(.active) {
+        background-color: #f1f5f9;
+        color: #0f172a;
+    }
+    /* Katakana specific override for the ACTIVE pill */
+    .kana-nav.katakana .nav-link.active {
+        background-color: #ef4444; /* Red active pill */
+        color: #ffffff;
+        font-weight: 900;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    /* Card Polish */
+    .kana-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .katakana-acc .kana-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+        border-color: rgba(239, 68, 68, 0.3); /* Red border on hover */
+    }
+    .tab-pane.active {
+        animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    @@keyframes fadeInScale {
+        0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+</style>
+
+@{
+    var katakanaSections = new List<(string Title, string TabTitle, string ID, (string Kana, string Romaji, string Note)[] Items)> {
+        ("The Vowels", "Vowels", "vowels", new[] {
+            ("ア", "a", "Ah as in Father."), ("イ", "i", "Ee as in Feet."),
+            ("ウ", "u", "Oo as in Boot."), ("エ", "e", "Eh as in Met."), ("オ", "o", "Oh as in Boat.")
+        }),
+        ("K & G Rows (Parallel)", "K & G", "k-g-row", new[] {
+            ("カ", "ka", "Kah as in Car."), ("ガ", "ga", "Gah as in Garden."),
+            ("キ", "ki", "Kee as in Key."), ("ギ", "gi", "Gee as in Geese."),
+            ("ク", "ku", "Koo as in Cook."), ("グ", "gu", "Goo as in Good."),
+            ("ケ", "ke", "Keh as in Kelp."), ("ゲ", "ge", "Geh as in Get."),
+            ("コ", "ko", "Koh as in Co-op."), ("ゴ", "go", "Goh as in Golf.")
+        }),
+        ("S & Z Rows (Parallel)", "S & Z", "s-z-row", new[] {
+            ("サ", "sa", "Sah as in Sauna."), ("ザ", "za", "Zah as in Zara."),
+            ("シ", "shi", "Shee as in Sheep."), ("ジ", "ji", "Jee as in Jeep."),
+            ("ス", "su", "Soo as in Soon."), ("ズ", "zu", "Zoo as in Zoo."),
+            ("セ", "se", "Seh as in Set."), ("ゼ", "ze", "Zeh as in Zen."),
+            ("ソ", "so", "Soh as in Soft."), ("ゾ", "zo", "Zoh as in Zone.")
+        }),
+        ("T & D Rows (Parallel)", "T & D", "t-d-row", new[] {
+            ("タ", "ta", "Tah as in Target."), ("ダ", "da", "Dah as in Dad."),
+            ("チ", "chi", "Chee as in Cheese."), ("ヂ", "ji", "Jee as in Jeep."),
+            ("ツ", "tsu", "Tsu as in Ea-ts-u."), ("ヅ", "zu", "Zoo as in Zoo."),
+            ("テ", "te", "Teh as in Tell."), ("デ", "de", "Deh as in Den."),
+            ("ト", "to", "Toh as in Toe."), ("ド", "do", "Doh as in Door.")
+        }),
+        ("N-Row", "N", "n-row", new[] {
+            ("ナ", "na", "Nah as in Knot."), ("ニ", "ni", "Nee as in Knee."),
+            ("ヌ", "nu", "Noo as in Newt."), ("ネ", "ne", "Neh as in Net."), ("ノ", "no", "Noh as in Nose.")
+        }),
+        ("H, B & P Rows (Parallel)", "H, B, P", "h-b-p-row", new[] {
+            ("ハ", "ha", "Hah as in Ha-ha."), ("バ", "ba", "Bah as in Ball."), ("パ", "pa", "Pah as in Park."),
+            ("ヒ", "hi", "Hee as in Heat."), ("ビ", "bi", "Bee as in Bee."), ("ピ", "pi", "Pee as in Peek."),
+            ("フ", "fu", "Foo as in Fuji."), ("ブ", "bu", "Boo as in Boot."), ("プ", "pu", "Poo as in Pool."),
+            ("ヘ", "he", "Heh as in Help."), ("ベ", "be", "Beh as in Bed."), ("ペ", "pe", "Peh as in Pen."),
+            ("ホ", "ho", "Hoh as in Home."), ("ボ", "bo", "Boh as in Boat."), ("ポ", "po", "Poh as in Poke.")
+        }),
+        ("M-Row", "M", "m-row", new[] {
+            ("マ", "ma", "Mah as in Mom."), ("ミ", "mi", "Mee as in Me."),
+            ("ム", "mu", "Moo as in Moon."), ("メ", "me", "Meh as in Men."), ("モ", "mo", "Moh as in More.")
+        }),
+        ("Y-Row", "Y", "y-row", new[] {
+            ("ヤ", "ya", "Yah as in Yard."), ("ユ", "yu", "Yoo as in You."), ("ヨ", "yo", "Yoh as in Yoyo.")
+        }),
+        ("R-Row", "R", "r-row", new[] {
+            ("ラ", "ra", "Rah as in Rock."), ("リ", "ri", "Ree as in Reed."),
+            ("ル", "ru", "Roo as in Root."), ("レ", "re", "Reh as in Red."), ("ロ", "ro", "Roh as in Road.")
+        }),
+        ("W-Row & N", "W & N", "w-n-row", new[] {
+            ("ワ", "wa", "Wah as in Water."), ("ヲ", "wo", "Oh as in Boat."), ("ン", "n", "Final 'N' sound.")
+        })
+    };
+}
+
+<div class="container py-5 katakana-acc">
+    <div class="text-center mb-5">
+        <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger-subtle px-3 py-2 fw-black mb-3 shadow-sm" style="letter-spacing: 1px;">COURSE 02</span>
+        <h1 class="fw-black display-4" style="letter-spacing: -2px;">Katakana <span class="text-danger">Arena</span></h1>
+        <p class="lead text-muted fw-bold">Master the sharp alphabet for loanwords. Select a row to begin your training.</p>
+    </div>
+
+    <div class="d-flex justify-content-center mb-5 sticky-top py-3" style="top: 70px; z-index: 100; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);">
+        @* Added 'katakana' class to this ul so the active pill is red *@
+        <ul class="nav nav-pills kana-nav katakana bg-white p-2 rounded-pill shadow-sm border d-inline-flex gap-1 overflow-auto hide-scrollbar flex-nowrap" role="tablist" style="max-width: 95vw;">
+            @for (int i = 0; i < katakanaSections.Count; i++)
+            {
+                var kanaGroup = katakanaSections[i]; 
+                var isActive = i == 0 ? "active" : "";
+                
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @isActive" id="tab-@kanaGroup.ID" data-bs-toggle="pill" data-bs-target="#pane-@kanaGroup.ID" type="button" role="tab" aria-controls="pane-@kanaGroup.ID" aria-selected="@(i == 0 ? "true" : "false")">
+                        @kanaGroup.TabTitle
+                    </button>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="tab-content w-100" id="kanaTabContent">
+        @for (int i = 0; i < katakanaSections.Count; i++)
+        {
+            var kanaGroup = katakanaSections[i]; 
+            var isActivePane = i == 0 ? "show active" : "";
+            
+            <div class="tab-pane fade @isActivePane" id="pane-@kanaGroup.ID" role="tabpanel" aria-labelledby="tab-@kanaGroup.ID" tabindex="0">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        
+                        <div class="d-flex align-items-center mb-4 border-bottom pb-3 gap-3 border-danger-subtle">
+                            <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                                <i class="bi bi-fire fs-5"></i>
+                            </div>
+                            <h3 class="fw-black mb-0 text-dark">@kanaGroup.Title</h3>
+                        </div>
+
+                        <div class="row g-4">
+                            @foreach (var item in kanaGroup.Items)
+                            {
+                                <div class="@(kanaGroup.Items.Length % 3 == 0 ? "col-md-4" : "col-md-6")">
+                                    <div class="kana-card static-card p-0 overflow-hidden bg-white rounded-4 shadow-sm h-100">
+                                        <div class="row g-0 h-100">
+                                            <div class="col-4 bg-danger bg-gradient d-flex flex-column align-items-center justify-content-center py-4 text-white">
+                                                <span class="fw-black lh-1 mb-1" style="font-size: 3.5rem;">@item.Kana</span>
+                                                <span class="fw-black text-uppercase small opacity-75" style="letter-spacing: 2px;">@item.Romaji</span>
+                                            </div>
+                                            <div class="col-8 p-3 d-flex flex-column justify-content-center">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <h4 class="fw-black text-dark mb-0">@item.Romaji.ToUpper()</h4>
+                                                    
+                                                    @* RESTORED AUDIO BUTTON (Red) *@
+                                                    <button class="btn btn-light text-danger border rounded-circle shadow-sm hover-scale d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" onclick="speak('@item.Kana')" title="Play Audio">
+                                                        <i class="bi bi-volume-up-fill fs-5"></i>
+                                                    </button>
+
+                                                </div>
+                                                <p class="small text-muted fw-bold mb-0">@item.Note</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function speak(text) {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = 'ja-JP';
+        msg.rate = 1.0;
+        window.speechSynthesis.speak(msg);
+    }
+</script>

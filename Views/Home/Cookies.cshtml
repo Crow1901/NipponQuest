@@ -1,0 +1,48 @@
+﻿@{
+    ViewData["Title"] = "Cookie Policy";
+}
+<div class="container py-5">
+    <div class="auth-card mx-auto shadow-lg" style="max-width: 900px; padding: 4rem;">
+        <div class="text-center mb-5">
+            <h1 class="fw-black text-dark" style="letter-spacing: -2px; font-size: 3rem;">@ViewData["Title"]</h1>
+            <p class="text-muted fw-bold">Issued by YugenLabs | 2026</p>
+        </div>
+
+        <div class="legal-content fw-bold text-muted" style="line-height: 1.8;">
+            <section class="mb-5">
+                <h4 class="text-dark fw-black text-uppercase small mb-3" style="letter-spacing: 1px;">1. Engineering Excellence</h4>
+                <p>
+                    At <strong>YugenLabs</strong>, we prioritize a seamless user experience. Cookies and local browser storage are the technical foundations
+                    that allow <strong>NipponQuest</strong> to deliver real-time gamification, power our Spaced Repetition Engine, and ensure secure authentication.
+                </p>
+            </section>
+
+            <section class="mb-5">
+                <h4 class="text-dark fw-black text-uppercase small mb-3" style="letter-spacing: 1px;">2. Storage Classification</h4>
+                <div class="ps-3 border-start border-primary border-3">
+                    <p class="mb-2"><strong>Authentication:</strong> Managed via .NET Identity to keep your session secure across the Arena and Discover Hub.</p>
+                    <p class="mb-2"><strong>Progression & Economy:</strong> Tracking XP, Gold balances, and League rank updates during your active session.</p>
+                    <p class="mb-2"><strong>Flashcard Engine:</strong> Utilizing local and session storage to manage active flashcard reviews, Anki deck import states, and learning algorithm timings.</p>
+                    <p class="mb-2"><strong>Security:</strong> Anti-forgery tokens (XSRF) to prevent cross-site request forgery during gameplay and marketplace transactions.</p>
+                </div>
+            </section>
+
+            <section class="mb-5">
+                <h4 class="text-dark fw-black text-uppercase small mb-3" style="letter-spacing: 1px;">3. External Integrations</h4>
+                <p>
+                    Our use of <strong>Google OAuth</strong> requires third-party cookies to verify your identity.
+                    Please refer to Google's Privacy and Terms for details on their data handling.
+                </p>
+            </section>
+
+            <div class="mt-5 pt-4 border-top text-center">
+                <p class="small opacity-75">
+                    For legal or technical inquiries: <br />
+                    <span class="text-dark fw-black">YugenLabs</span><br />
+                    <span class="text-muted">Lead Developer: Joshua Marc Lourens</span><br />
+                    Westville, South Africa
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

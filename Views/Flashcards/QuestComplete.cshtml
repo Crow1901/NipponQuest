@@ -1,0 +1,107 @@
+﻿@{
+    ViewData["Title"] = "Quest Complete";
+    int total = ViewBag.TotalCards ?? 10;
+    int exp = ViewBag.ExpReward ?? 10;
+    int gold = ViewBag.GoldReward ?? 5;
+}
+
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+            
+            <!-- 1. QUEST COMPLETE CARD -->
+            <div class="static-card border-0 rounded-4 shadow-lg overflow-hidden bg-white text-center p-0 mb-5 transition-all">
+                
+                <!-- Premium Gradient Header Banner -->
+                <div class="p-5 text-white position-relative" style="background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);">
+                    <div class="mb-4">
+                        <div class="gold-coin shadow-lg transition-all hover-scale" style="width: 100px; height: 100px; font-size: 3rem; border-width: 4px; box-shadow: 0 6px 0 #B45309; margin: 0 auto;"></div>
+                    </div>
+                    <h1 class="fw-black m-0 text-uppercase tracking-tight" style="font-size: 3.2rem;">Quest Complete!</h1>
+                    <p class="fw-black text-white opacity-75 mt-2 text-uppercase tracking-wider">You have conquered this challenge</p>
+                </div>
+
+                <div class="card-body p-5">
+                    <!-- Stats Display -->
+                    <div class="mb-5">
+                        <p class="text-muted fw-black text-uppercase tracking-wider small mb-2">Mastery Progress</p>
+                        <h2 class="fw-black text-primary tracking-tight m-0 hero-glow-text" style="font-size: 5rem; line-height: 1;">@total / @total</h2>
+                    </div>
+
+                    <!-- 2. REWARDS HUD CONTAINER -->
+                    <div class="bg-soft-blue p-4 rounded-4 mb-5 border border-primary-subtle shadow-sm mx-auto transition-all hover-lift" style="max-width: 450px;">
+                        <p class="fw-black text-primary mb-3 text-uppercase tracking-wider small opacity-75">
+                            Rewards Earned
+                        </p>
+                        <div class="d-flex justify-content-center align-items-center gap-4">
+                            <!-- EXP Reward -->
+                            <div class="text-center">
+                                <span class="fw-black text-dark d-block" style="font-size: 2.2rem;">
+                                    <i class="bi bi-lightning-charge-fill text-warning"></i> @exp
+                                </span>
+                                <span class="fw-black text-muted text-uppercase tracking-wider small" style="font-size: 0.7rem;">EXP gained</span>
+                            </div>
+                            
+                            <!-- Divider -->
+                            <div class="border-start border-primary-subtle h-100 mx-2" style="min-height: 45px; opacity: 0.5;"></div>
+
+                            <!-- Gold Reward -->
+                            <div class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <div class="gold-coin" style="width: 32px; height: 32px; font-size: 1rem; border-width: 2px; box-shadow: 0 2px 0 #B45309;"></div>
+                                    <span class="fw-black text-dark" style="font-size: 2.2rem;">@gold</span>
+                                </div>
+                                <span class="fw-black text-muted text-uppercase tracking-wider small" style="font-size: 0.7rem;">Gold forged</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. CLAIM ACTION -->
+                    <form asp-action="ClaimRewards" method="post">
+                        <input type="hidden" name="expReward" value="@exp" />
+                        <input type="hidden" name="goldReward" value="@gold" />
+                        
+                        <div class="d-grid gap-3 justify-content-center">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-black px-5 py-3 shadow-sm text-uppercase tracking-wider btn-cta-premium w-100 transition-all hover-lift" style="min-width: 320px; font-size: 1.1rem;">
+                                <i class="bi bi-trophy-fill me-2"></i> CLAIM REWARDS
+                            </button>
+                            <p class="text-muted small fw-bold mt-2">Rewards will be added to your profile instantly.</p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f8fafc; }
+
+    /* Specific overrides aligned with other views */
+    .tracking-tight { letter-spacing: -1px; }
+    .tracking-wider { letter-spacing: 1px; }
+    
+    .hero-glow-text { text-shadow: 0 0 20px rgba(14, 165, 233, 0.2); }
+
+    /* Interactions */
+    .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important; }
+    
+    .hover-scale:hover { transform: scale(1.1); }
+    .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Gamification Elements */
+    .gold-coin {
+        background: linear-gradient(135deg, #FFD700 0%, #FFB900 100%);
+        border-radius: 50%;
+        border: 1.5px solid #B45309;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        color: #451a03 !important; 
+        transform: translateY(-2px);
+    }
+    .gold-coin::after { content: "G"; }
+</style>

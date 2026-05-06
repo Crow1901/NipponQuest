@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NipponQuest</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-3 shadow-sm sticky-top">
+            <div class="container-fluid px-4">
+                <!-- Logo Engine -->
+                <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center me-4">
+                        <a class="navbar-brand fw-black text-primary p-0 m-0" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 1.6rem; letter-spacing: -1.5px;">NipponQuest</a>
+                        <span class="brand-japanese-sub">ニッポン・クエスト</span>
+                    </div>
+
+                    <!-- Links Moved Next to Logo -->
+                    <div class="collapse navbar-collapse d-sm-inline-flex">
+                        <ul class="navbar-nav gap-4">
+                            <li class="nav-item">
+                                <a class="nav-link fw-black text-dark small" asp-controller="Home" asp-action="Index">HOME</a>
+                            </li>
+
+                            <!-- Japanese Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle fw-black text-dark small nav-link-glow" href="#" id="jpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    JAPANESE
+                                </a>
+                                <ul class="dropdown-menu border-0 shadow-lg rounded-4 p-2 mt-2" aria-labelledby="jpDropdown">
+                                    <li>
+                                        <a class="dropdown-item fw-bold py-2 rounded-3 d-flex align-items-center" asp-controller="Learning" asp-action="Hiragana">
+                                            <span class="text-primary me-2 fw-black" style="font-size: 1.1rem; width: 20px; text-align: center;">あ</span>Hiragana
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item fw-bold py-2 rounded-3 d-flex align-items-center" asp-controller="Learning" asp-action="Katakana">
+                                            <span class="text-primary me-2 fw-black" style="font-size: 1.1rem; width: 20px; text-align: center;">ア</span>Katakana
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item fw-bold py-2 rounded-3 d-flex align-items-center" asp-controller="KanaBlitz" asp-action="Index">
+                                            <i class="bi bi-lightning-charge-fill text-warning me-2" style="width: 20px; font-size: 1.1rem; text-align: center; display: inline-block;"></i>KanaBlitz
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1 opacity-25"></li>
+                                    <li>
+                                        <a class="dropdown-item fw-bold py-2 rounded-3 d-flex align-items-center" asp-controller="Flashcards" asp-action="Index">
+                                            <i class="bi bi-stack text-primary me-2 fw-black" style="font-size: 1.1rem; width: 20px; text-align: center;"></i>Flashcards
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- Personal Dropdown (Leaderboards + Stats) -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle fw-black text-dark small nav-link-glow" href="#" id="personalDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    PERSONAL
+                                </a>
+                                <ul class="dropdown-menu border-0 shadow-lg rounded-4 p-2 mt-2" aria-labelledby="personalDropdown">
+                                    <li>
+                                        <a class="dropdown-item fw-bold py-2 rounded-3 d-flex align-items-center" asp-controller="Leagues" asp-action="Index">
+                                            <i class="bi bi-trophy-fill text-warning me-2" style="width: 20px; font-size: 1.1rem; text-align: center; display: inline-block;"></i>Leaderboards
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item fw-bold py-2 rounded-3 d-flex align-items-center" asp-controller="Stats" asp-action="Index">
+                                            <i class="bi bi-graph-up-arrow text-primary me-2" style="width: 20px; font-size: 1.1rem; text-align: center; display: inline-block;"></i>Stats Vault
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+        
+                <!-- Auth Action Pair (Right Side) -->
+                <div class="d-flex align-items-center gap-3 ms-auto">
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container-fluid flex-grow-1 p-0">
+        <main role="main" class="pb-5">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="nippon-footer mt-auto">
+        <div class="container">
+            <div class="row pt-5 pb-4">
+                <!-- Brand Column -->
+                <div class="col-lg-4 mb-4">
+                    <div class="d-inline-flex flex-column align-items-center">
+                        <a class="navbar-brand fw-black text-primary p-0 m-0" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 1.6rem; letter-spacing: -1.5px; line-height: 1;">
+                            NipponQuest
+                        </a>
+                        <span class="brand-japanese-sub m-0" style="letter-spacing: 0.3em; font-size: 0.7rem; width: 100%; text-align: center;">ニッポン・クエスト</span>
+                    </div>
+                    <p class="text-muted small mt-3 fw-bold" style="max-width: 280px;">
+                        A premium language learning ecosystem engineered by <strong>YugenLabs</strong>. Master Japanese through gamified excellence.
+                    </p>
+                </div>
+
+                <!-- Platform Links -->
+                <div class="col-6 col-lg-2 mb-4">
+                    <h6 class="fw-black text-uppercase small opacity-50 mb-3" style="letter-spacing: 1px;">Platform</h6>
+                    <ul class="list-unstyled fw-bold small">
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Index" class="footer-link">Home</a></li>
+                        <li class="mb-2"><a asp-controller="Leagues" asp-action="Index" class="footer-link">Leaderboards</a></li>
+                        <li class="mb-2"><a asp-controller="Stats" asp-action="Index" class="footer-link">Stats Vault</a></li>
+                    </ul>
+                </div>
+
+                <!-- Legal Links -->
+                <div class="col-6 col-lg-2 mb-4">
+                    <h6 class="fw-black text-uppercase small opacity-50 mb-3" style="letter-spacing: 1px;">Legal</h6>
+                    <ul class="list-unstyled fw-bold small">
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Privacy" class="footer-link">Privacy Policy</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Terms" class="footer-link">Terms of Service</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Cookies" class="footer-link">Cookie Policy</a></li>
+                    </ul>
+                </div>
+
+                <!-- Social/Community -->
+                <div class="col-lg-4 mb-4 text-lg-end">
+                    <h6 class="fw-black text-uppercase small opacity-50 mb-3" style="letter-spacing: 1px;">Community</h6>
+                    <div class="d-flex justify-content-lg-end gap-3">
+                        <a href="#" class="social-icon-btn"><i class="bi bi-discord"></i></a>
+                        <a href="#" class="social-icon-btn"><i class="bi bi-twitter-x"></i></a>
+                        <a href="https://github.com/marclourens19/NipponQuest" class="social-icon-btn"><i class="bi bi-github"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="border-top py-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <span class="text-muted small fw-bold">
+                    &copy; @DateTime.Now.Year NipponQuest. All rights reserved.
+                </span>
+                <span class="text-muted small fw-black text-uppercase opacity-50" style="letter-spacing: 2px;">
+                    Designed by YugenLabs
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,1166 @@
+﻿@using Microsoft.AspNetCore.Identity
+@model IReadOnlyList<Octokit.GitHubCommit>
+@inject UserManager<NipponQuest.Models.ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "Master Japanese - NipponQuest";
+    var currentUser = await UserManager.GetUserAsync(User);
+
+    string FormatNumber(long num)
+    {
+        if (num >= 1000000000) return (num / 1000000000D).ToString("0.#") + "B+";
+        if (num >= 1000000)    return (num / 1000000D).ToString("0.#") + "M+";
+        if (num >= 1000)       return (num / 1000D).ToString("0.#") + "k+";
+        return num.ToString();
+    }
+
+    long rawXp        = ViewBag.TotalXP      != null ? (long)ViewBag.TotalXP      : 0;
+    long rawGold      = ViewBag.TotalGold    != null ? (long)ViewBag.TotalGold    : 0;
+    int  rawStreaks   = ViewBag.ActiveStreaks != null ? (int)ViewBag.ActiveStreaks  : 0;
+    
+    string totalXpDisplay      = FormatNumber(rawXp);
+    string totalGoldDisplay    = FormatNumber(rawGold);
+    string activeStreaksDisplay = FormatNumber(rawStreaks);
+}
+
+<style>
+    /* ── SCROLL REVEAL ── */
+    .reveal-up {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+    }
+    .reveal-up.active { opacity: 1; transform: translateY(0); }
+    .delay-100 { transition-delay: 100ms; }
+    .delay-200 { transition-delay: 200ms; }
+    .delay-300 { transition-delay: 300ms; }
+
+    /* ── BETA BANNER ── */
+    .beta-banner {
+        background: linear-gradient(90deg, #0f172a, #1e293b, #0f172a);
+        color: #f8fafc;
+        padding: 10px 20px;
+        font-size: 0.85rem;
+        letter-spacing: 0.03em;
+        position: relative;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .beta-banner-tag {
+        background: #0ea5e9;
+        color: white;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        font-size: 0.65rem;
+        padding: 4px 10px;
+        border-radius: 50px;
+        margin-right: 12px;
+    }
+    .beta-banner a {
+        color: #38bdf8;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    .beta-banner a:hover {
+        color: #7dd3fc;
+        text-decoration: underline;
+    }
+
+    /* ── HERO ── */
+    .hero-section {
+        background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,0.08) 0%, transparent 70%), #ffffff;
+        padding-bottom: 0 !important;
+    }
+    .hero-headline {
+        font-size: clamp(3rem, 7vw, 5.25rem);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+    }
+    .hero-pill {
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border: 1px solid rgba(14,165,233,0.25) !important;
+        color: #0369a1;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        padding: 8px 18px;
+        border-radius: 50px;
+        font-weight: 900;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+    }
+    .hero-trust {
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+    }
+    /* subtle wave divider between hero and stats */
+    .hero-wave {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        line-height: 0;
+        margin-top: 3rem;
+    }
+    .hero-wave svg { display: block; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+        background: #ffffff;
+        border-top: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .stat-divider {
+        width: 1px;
+        height: 50px;
+        background: #e2e8f0;
+        align-self: center;
+    }
+    .stat-label {
+        font-size: 0.65rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        font-weight: 900;
+        margin-top: 2px;
+    }
+    .stat-number {
+        font-size: 2.25rem;
+        line-height: 1;
+        color: #1e293b;
+    }
+
+    /* ── FEATURE CARDS SECTION ── */
+    .features-section { padding: 90px 0; }
+    .section-eyebrow {
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #0ea5e9;
+    }
+    .static-card {
+        border-radius: 28px;
+        background: #ffffff;
+        border: 1px solid rgba(226,232,240,0.7);
+        box-shadow: 0 4px 24px -8px rgba(0,0,0,0.04);
+        transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+        height: 100%;
+    }
+    .static-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 24px 50px -12px rgba(14,165,233,0.14);
+        border-color: #0ea5e9 !important;
+    }
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #0ea5e9;
+        margin-bottom: 22px;
+        transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .static-card:hover .feature-icon { transform: scale(1.12) rotate(-4deg); }
+
+    /* ── QUIZ SECTION ── */
+    .trial-section { padding: 90px 0; }
+    .trial-card {
+        background: #ffffff;
+        border: 1.5px solid #e0f2fe;
+        border-radius: 32px;
+        box-shadow: 0 8px 32px -8px rgba(14,165,233,0.1);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .trial-card:hover {
+        border-color: #7dd3fc;
+        box-shadow: 0 20px 50px -15px rgba(14,165,233,0.18);
+    }
+    .quiz-char-bg {
+        background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+        border-radius: 20px;
+        border: 1px solid #e0f2fe;
+        min-height: 280px;
+    }
+    .trial-answer-btn {
+        min-width: 90px;
+        border-radius: 14px !important;
+        font-weight: 900;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        padding: 12px 22px !important;
+        border-width: 2px !important;
+        transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .trial-answer-btn:hover:not(:disabled) {
+        transform: translateY(-3px) scale(1.04);
+        background-color: #0ea5e9;
+        border-color: #0ea5e9 !important;
+        color: white;
+        box-shadow: 0 8px 20px -4px rgba(14,165,233,0.35);
+    }
+    .quiz-result-reward {
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border: 1px solid rgba(14,165,233,0.15);
+        border-radius: 20px;
+    }
+
+    /* ── FLASHCARD SECTION ── */
+    .flashcard-section { padding: 90px 0; }
+
+    /* ── MARKETPLACE SECTION ── */
+    .marketplace-section { padding: 90px 0; }
+    .marketplace-card {
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 16px 48px -12px rgba(0,0,0,0.12);
+        border: 1px solid rgba(226,232,240,0.5);
+        transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease;
+    }
+    .marketplace-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 30px 60px -15px rgba(0,0,0,0.18);
+    }
+
+    /* ── TIER TRACK ── */
+    .tiers-section { padding: 90px 0 0; }
+    .tier-track-wrapper {
+        overflow-x: auto;
+        padding-bottom: 20px;
+        scrollbar-width: none; /* Firefox */
+    }
+    .tier-track-wrapper::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+    .tier-track {
+        min-width: max-content;
+        padding: 10px 20px;
+        overflow: visible !important; 
+    }
+    .tier-item { flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .tier-item:hover { transform: scale(1.12); z-index: 10; }
+    .tier-connector { flex-grow: 1; height: 2px; background: linear-gradient(to right, #e2e8f0, #cbd5e1); min-width: 20px; border-radius: 2px; }
+
+    /* ── REWARD HUD ── */
+    .reward-hud {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid rgba(14,165,233,0.12) !important;
+        border-radius: 32px;
+        box-shadow: 0 20px 50px -15px rgba(14,165,233,0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    .reward-hud::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -20%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(14,165,233,0.06) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .promote-badge {
+        background: linear-gradient(135deg, rgba(14,165,233,0.12), rgba(14,165,233,0.06));
+        border: 1px solid rgba(14,165,233,0.2);
+        color: #0369a1;
+        border-radius: 50px;
+        padding: 8px 18px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap-section { padding: 90px 0; }
+    .roadmap-container {
+        position: relative;
+        z-index: 1;
+    }
+    .roadmap-node {
+        width: 72px;
+        height: 72px;
+        background: white;
+        border: 3px solid #0ea5e9;
+        border-radius: 50%;
+        z-index: 2;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        box-shadow: 0 4px 16px -4px rgba(14,165,233,0.2);
+    }
+    .roadmap-node:hover { transform: scale(1.15); border-color: #1e3a8a; box-shadow: 0 10px 28px -6px rgba(14,165,233,0.35); }
+    .node-locked { border-color: #cbd5e1; color: #94a3b8; box-shadow: none; }
+    .node-locked:hover { border-color: #94a3b8; box-shadow: 0 4px 16px -4px rgba(0,0,0,0.08); }
+    .roadmap-line { position: absolute; top: 50%; left: 0; right: 0; height: 3px; background: linear-gradient(to right, #e0f2fe, #bae6fd); z-index: 1; }
+
+    /* Quest card */
+    #quest-requirement-card {
+        border-radius: 32px !important;
+        box-shadow: 0 16px 48px -12px rgba(0,0,0,0.08) !important;
+    }
+    .study-path-line {
+        border-left: 2px dashed #e2e8f0;
+        padding-left: 30px;
+        margin-left: 10px;
+    }
+    .path-step {
+        position: relative;
+    }
+    .path-step::after {
+        content: '';
+        position: absolute;
+        left: -38px; /* Offset to center on the dashed line */
+        top: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--step-color);
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    /* ── QUEST LOG ── */
+    .quest-log-section { padding: 90px 0; }
+    .quest-log-container { max-height: 520px; overflow-y: auto; scrollbar-width: thin; }
+    .quest-log-container::-webkit-scrollbar { width: 5px; }
+    .quest-log-container::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .commit-item {
+        border-radius: 14px;
+        padding: 14px !important;
+        margin-bottom: 8px !important;
+        transition: background 0.2s ease, transform 0.2s ease;
+        border: 1px solid transparent !important;
+    }
+    .commit-item:hover {
+        background: #f8fafc !important;
+        border-color: #e0f2fe !important;
+        transform: translateX(4px);
+    }
+    .commit-item:last-child { margin-bottom: 0 !important; }
+    .live-dot {
+        width: 8px; height: 8px;
+        background: #0ea5e9;
+        border-radius: 50%;
+        display: inline-block;
+        animation: livePulse 1.8s ease infinite;
+    }
+    @@keyframes livePulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── FINAL CTA ── */
+    .cta-section { padding: 90px 0; }
+    .cta-banner {
+        background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 50%, #0ea5e9 100%);
+        border-radius: 28px;
+        padding: 70px 40px;
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+    .cta-banner::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        left: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .cta-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -50%;
+        right: -10%;
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .cta-free-tag {
+        font-size: 0.65rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        opacity: 0.55;
+        font-weight: 900;
+        margin-top: 1.5rem;
+    }
+
+    /* ── GLOBAL POLISH ── */
+    .hover-lift { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1) !important; }
+    .hover-lift:hover { transform: translateY(-3px) !important; }
+    .section-heading {
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+</style>
+
+<div class="beta-banner d-flex justify-content-center align-items-center flex-wrap gap-2 text-center">
+    <span class="beta-banner-tag">BETA V1.0</span>
+    <span class="fw-bold opacity-75">NipponQuest is currently in early beta. We'd love your feedback to help us improve!</span>
+    <a href="https://forms.gle/3PhMQDTUEpFpc2hp7" target="_blank" class="fw-black ms-md-2">
+        Share Feedback <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.75rem;"></i>
+    </a>
+</div>
+
+<div class="hero-section text-center" style="padding: 90px 0 0;">
+    <div class="container">
+        <div class="reveal-up">
+            <span class="hero-pill">
+                🏆&nbsp; THE WORLD'S #1 JAPANESE LEARNING ARENA
+            </span>
+        </div>
+
+        <h1 class="fw-black text-dark hero-headline reveal-up delay-100">
+            Master Japanese.<br>
+            <span class="text-primary hero-glow-text">Become Legend.</span>
+        </h1>
+
+        <p class="lead text-muted fw-bold mb-5 mt-4 px-md-5 mx-auto reveal-up delay-200"
+           style="max-width: 760px; font-size: 1.2rem; line-height: 1.65;">
+            The only platform where <strong class="text-dark">competitive gaming mechanics</strong> accelerate
+            language mastery. Climb elite leagues, build real-world fluency, and conquer Nihongo
+            with an unbreakable daily streak.
+        </p>
+
+        <div class="d-flex flex-column align-items-center gap-2 reveal-up delay-300">
+            @if (currentUser != null)
+            {
+                <a asp-controller="Leagues" asp-action="Index"
+                   class="btn btn-primary btn-lg rounded-pill fw-black px-5 py-3 btn-cta-premium quest-pulse">
+                    RESUME YOUR QUEST
+                </a>
+            }
+            else
+            {
+                <a asp-area="Identity" asp-page="/Account/Register"
+                   class="btn btn-primary btn-lg rounded-pill fw-black px-5 py-3 btn-cta-premium quest-pulse">
+                    START YOUR JOURNEY — IT'S 100% FREE
+                </a>
+            }
+            <p class="hero-trust mt-2">
+                <i class="bi bi-shield-check text-success me-1"></i>
+                INSTANT ACCESS &bull; NO CREDIT CARD &bull; JOIN IN 30 SECONDS
+            </p>
+        </div>
+    </div>
+
+    <div class="hero-wave mt-5">
+        <svg viewBox="0 0 1440 48" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="height:48px; width:100%;">
+            <path d="M0,24 C360,48 1080,0 1440,24 L1440,48 L0,48 Z" fill="#f8fafc"/>
+        </svg>
+    </div>
+</div>
+
+
+<div class="stats-bar py-5">
+    <div class="container reveal-up">
+        <div class="d-flex justify-content-center align-items-center gap-0 flex-wrap">
+            <div class="text-center px-4 px-md-5">
+                <div class="stat-number fw-black">@totalXpDisplay</div>
+                <div class="stat-label">Total XP Earned</div>
+            </div>
+            <div class="stat-divider d-none d-md-block mx-2"></div>
+            <div class="text-center px-4 px-md-5">
+                <div class="stat-number fw-black text-warning">@totalGoldDisplay</div>
+                <div class="stat-label">Total Gold Earned</div>
+            </div>
+            <div class="stat-divider d-none d-md-block mx-2"></div>
+            <div class="text-center px-4 px-md-5">
+                <div class="stat-number fw-black">@activeStreaksDisplay</div>
+                <div class="stat-label">Active Streaks</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="features-section bg-soft-blue-gradient">
+    <div class="container">
+        <div class="text-center mb-5 reveal-up">
+            <div class="section-eyebrow mb-3">Platform Features</div>
+            <h2 class="section-heading text-dark">Engineered for Fluency</h2>
+            <p class="text-muted fw-bold mt-3" style="font-size: 1.05rem;">
+                Where gaming immersion meets scientific language acquisition.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4 reveal-up">
+                <div class="static-card p-4 p-lg-5">
+                    <div class="feature-icon"><i class="bi bi-controller" style="color: #0f172a;"></i></div>
+                    <h4 class="fw-black mb-3">Gamified Curriculum</h4>
+                    <p class="text-muted mb-0" style="line-height: 1.65;">
+                        Conquer Hiragana, Katakana, and Kanji through dynamic challenges that transform
+                        learning into a rewarding progression system.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4 reveal-up delay-100">
+                <div class="static-card p-4 p-lg-5">
+                    <div class="feature-icon"><i class="bi bi-trophy-fill" style="color: #eab308;"></i></div>
+                    <h4 class="fw-black mb-3">Competitive Arenas</h4>
+                    <p class="text-muted mb-0" style="line-height: 1.65;">
+                        Test your skills against players in your bracket. Battle for promotion every
+                        Sunday at midnight in high-intensity weekly leagues.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4 reveal-up delay-200">
+                <div class="static-card p-4 p-lg-5">
+                    <div class="feature-icon"><i class="bi bi-fire" style="color: #f97316;"></i></div>
+                    <h4 class="fw-black mb-3">Fluency Engine</h4>
+                    <p class="text-muted mb-0" style="line-height: 1.65;">
+                        Stay consistent with an unbreakable streak system. Earn Gold to customize your
+                        legacy and dominate the global rankings.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="trial-section bg-white">
+    <div class="container">
+        <div class="row justify-content-center reveal-up">
+            <div class="col-lg-8">
+                <div class="trial-card p-4 p-lg-5" id="quiz-container">
+
+                    <div id="quiz-game">
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                            <div>
+                                <div class="section-eyebrow mb-1">Interactive Trial</div>
+                                <h3 class="fw-black m-0">Hiragana <span class="text-primary">Blitz</span></h3>
+                            </div>
+                            <span class="badge rounded-pill fw-black px-3 py-2"
+                                  style="background: #f0f9ff; color: #0ea5e9; border: 1px solid rgba(14,165,233,0.2); font-size: 0.72rem; letter-spacing: 0.08em;"
+                                  id="quiz-progress">QUEST 1 / 5</span>
+                        </div>
+
+                        <div class="quiz-char-bg p-5 mb-4 text-center position-relative">
+                            <div id="feedback-check"
+                                 class="position-absolute top-50 start-50 translate-middle d-none"
+                                 style="z-index: 10;">
+                                <i class="bi bi-check-circle-fill text-success"
+                                   style="font-size: 5rem; filter: drop-shadow(0 0 15px rgba(25,135,84,0.4));"></i>
+                            </div>
+                            <span class="display-1 fw-black d-block mb-3" id="hiragana-display">あ</span>
+                            <p class="text-muted fw-bold mb-0 small text-uppercase" style="letter-spacing: 0.08em;">
+                                What is this character?
+                            </p>
+                            <div class="d-flex justify-content-center gap-3 mt-4" id="answer-buttons"></div>
+                        </div>
+
+                        <p class="text-center text-muted small fw-bold mb-0">
+                            <i class="bi bi-info-circle text-primary me-1"></i>
+                            Completing lessons earns you EXP and Gold to climb the leaderboards.
+                        </p>
+                    </div>
+
+                    <div id="quiz-result" class="d-none text-center py-3">
+                        <div class="mb-4">
+                            <div class="gold-coin mx-auto mb-4"
+                                 style="width: 72px; height: 72px; font-size: 2rem; border-width: 4px; box-shadow: 0 6px 0 #B45309;"></div>
+                            <h2 class="fw-black text-dark mb-1">Quest Complete!</h2>
+                            <p class="display-5 fw-black text-primary mb-0" id="final-score">0 / 5</p>
+                        </div>
+
+                        <div class="quiz-result-reward p-4 mb-4 mx-auto" style="max-width: 480px;">
+                            <p class="fw-black text-dark small text-uppercase mb-3"
+                               style="letter-spacing: 0.08em; opacity: 0.6;">
+                                A registered account would have earned:
+                            </p>
+                            <div class="d-flex justify-content-center align-items-center gap-4">
+                                <span class="fw-black text-xp-yellow" style="font-size: 1.25rem;">
+                                    <i class="bi bi-lightning-charge-fill me-1"></i>10 EXP
+                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="gold-coin" style="width: 22px; height: 22px; font-size: 0.7rem; border-width: 1.5px; box-shadow: 0 2px 0 #B45309;"></div>
+                                    <span class="fw-black gold-text-match" style="font-size: 1.25rem;">5 GOLD</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a asp-area="Identity" asp-page="/Account/Register"
+                           class="btn btn-primary btn-lg rounded-pill fw-black px-5 btn-cta-premium">
+                            CLAIM YOUR REWARDS
+                        </a>
+                        <button onclick="resetQuiz()"
+                                class="btn btn-link d-block mx-auto mt-3 text-muted fw-bold text-decoration-none"
+                                style="opacity: 0.45; font-size: 0.8rem; letter-spacing: 0.06em;">
+                            TRY AGAIN
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="flashcard-section bg-soft-blue-gradient">
+    <div class="container">
+        <div class="row align-items-center g-5">
+
+            <div class="col-lg-5 reveal-up">
+                <span class="badge rounded-pill bg-white text-primary border border-primary-subtle px-3 py-2 fw-black mb-3 shadow-sm"
+                      style="letter-spacing: 0.06em; font-size: 0.7rem;">
+                    <i class="bi bi-stack me-1"></i> SPACED REPETITION ENGINE
+                </span>
+                <h2 class="section-heading text-dark mb-4">
+                    The Ultimate<br><span class="text-primary">Flashcard System</span>
+                </h2>
+                <p class="text-muted fw-bold mb-4" style="font-size: 1.05rem; line-height: 1.65;">
+                    Don't lose your progress. NipponQuest integrates a full-powered 3D flashcard engine
+                    utilizing advanced spaced repetition algorithms — you'll never forget a Kanji again.
+                </p>
+
+                <ul class="list-unstyled d-flex flex-column gap-3 mb-5">
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="feature-icon mb-0 bg-white" style="width: 44px; height: 44px; font-size: 1.15rem;">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                        </div>
+                        <span class="fw-black text-dark">One-Click Anki (.apkg) Import</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="feature-icon mb-0 bg-white" style="width: 44px; height: 44px; font-size: 1.15rem;">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <span class="fw-black text-dark">Adaptive Algorithm Timing</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="feature-icon mb-0 bg-white" style="width: 44px; height: 44px; font-size: 1.15rem;">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <span class="fw-black text-dark">Earn EXP &amp; Gold for Reviews</span>
+                    </li>
+                </ul>
+
+                <a asp-controller="Flashcards" asp-action="Index"
+                   class="btn btn-outline-primary fw-black rounded-pill px-4 py-2 hover-lift">
+                    EXPLORE FLASHCARDS <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+            </div>
+
+            <div class="col-lg-7 text-center reveal-up delay-200">
+                <div class="flashcard-container hover-lift" style="cursor: pointer;"
+                     onclick="this.classList.toggle('flipped')">
+                    <div class="flashcard-inner">
+                        <div class="card-face card-front">
+                            <span class="label-top text-white opacity-50">KANJI READING</span>
+                            <h1>戦う</h1>
+                            <p class="text-white fw-bold mt-4 opacity-60 small text-uppercase"
+                               style="letter-spacing: 0.1em;">
+                                <i class="bi bi-hand-index-thumb me-1"></i> Click to flip
+                            </p>
+                        </div>
+                        <div class="card-face card-back">
+                            <span class="label-top text-white opacity-50">MEANING</span>
+                            <h1 class="mb-2">たたかう</h1>
+                            <h4 class="text-white opacity-75">to fight; to battle</h4>
+                            <div class="anki-controls-wrapper mt-5" onclick="event.stopPropagation()">
+                                <button class="btn anki-btn anki-btn-again"><i class="bi bi-x-circle d-block"></i>1m</button>
+                                <button class="btn anki-btn anki-btn-hard"><i class="bi bi-dash-circle d-block"></i>10m</button>
+                                <button class="btn anki-btn anki-btn-good"><i class="bi bi-check-circle d-block"></i>1d</button>
+                                <button class="btn anki-btn anki-btn-easy"><i class="bi bi-star d-block"></i>4d</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div class="marketplace-section bg-white border-top border-bottom">
+    <div class="container">
+        <div class="row align-items-center g-5 flex-row-reverse">
+
+            <div class="col-lg-6 reveal-up">
+                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning-subtle px-3 py-2 fw-black mb-3 shadow-sm"
+                      style="letter-spacing: 0.06em; font-size: 0.7rem;">
+                    <i class="bi bi-shop me-1"></i> PLAYER ECONOMY
+                </span>
+                <h2 class="section-heading text-dark mb-4">
+                    Forge Decks.<br>
+                    <span class="text-warning" style="text-shadow: 0 0 20px rgba(245,158,11,0.2);">Earn Gold.</span>
+                </h2>
+                <p class="text-muted fw-bold mb-4" style="font-size: 1.05rem; line-height: 1.65;">
+                    Your knowledge has value. Craft custom flashcard decks and publish them to the
+                    <strong>Discover Hub</strong>. Set your price and earn Gold every time another
+                    player downloads your creation.
+                </p>
+
+                <ul class="list-unstyled d-flex flex-column gap-3 mb-5">
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="feature-icon mb-0 bg-light shadow-sm" style="width: 44px; height: 44px; font-size: 1.15rem;">
+                            <i class="bi bi-hammer text-primary"></i>
+                        </div>
+                        <span class="fw-black text-dark">Create Masterpieces</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="feature-icon mb-0 bg-light shadow-sm" style="width: 44px; height: 44px; font-size: 1.15rem;">
+                            <i class="bi bi-shop text-success"></i>
+                        </div>
+                        <span class="fw-black text-dark">Publish to the Community</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="feature-icon mb-0 bg-light shadow-sm d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                            <div class="gold-coin" style="width: 22px; height: 22px; font-size: 0.7rem; border-width: 1.5px; box-shadow: 0 2px 0 #B45309; margin: 0;"></div>
+                        </div>
+                        <span class="fw-black text-dark">Build Your Fortune</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-lg-6 reveal-up delay-200">
+                <div class="marketplace-card mx-auto" style="max-width: 420px; background: #f8fafc;">
+                    
+                    @* FIXED: Switched to flex layout for the header and put the badge in the flow so the text truncates properly *@
+                    <div class="p-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div style="min-width: 0;">
+                                <h4 class="fw-black m-0 text-white text-truncate" style="max-width: 220px;">
+                                    JLPT N4 Grammar Master
+                                </h4>
+                                <p class="small fw-bold mb-0 mt-2 text-white opacity-60 d-flex align-items-center">
+                                    <i class="bi bi-person-circle me-1"></i> By Questor
+                                </p>
+                            </div>
+                            <span class="badge bg-white text-dark rounded-pill fw-black ms-2 d-flex align-items-center gap-1 shadow-sm mt-1"
+                                  style="font-size: 0.68rem; padding: 6px 10px; flex-shrink: 0;">
+                                <span>120 Cards</span>
+                                <i class="bi bi-globe-americas"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-white">
+                        <p class="text-dark small fw-bold mb-4 opacity-75" style="line-height: 1.6;">
+                            The ultimate collection of N4 grammar points, featuring native audio and
+                            context sentences. Perfect for the upcoming Arena leagues!
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <div class="d-flex gap-3 align-items-center">
+                                <div class="d-flex align-items-center text-success">
+                                    <i class="bi bi-hand-thumbs-up-fill"></i>
+                                    <span class="ms-1 fw-black small">4.8k</span>
+                                </div>
+                                <div class="d-flex align-items-center text-primary opacity-75">
+                                    <i class="bi bi-cloud-arrow-down-fill"></i>
+                                    <span class="ms-1 fw-black small">12k</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-dark btn-sm rounded-pill px-4 py-2 fw-black btn-cta-premium d-flex align-items-center gap-2">
+                                <div class="gold-coin" style="width: 16px; height: 16px; font-size: 0.55rem; border-width: 1px; box-shadow: 0 1px 0 #B45309;"></div>
+                                <span>250 BUY</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <span class="badge bg-white text-muted border px-4 py-2 fw-black rounded-pill shadow-sm"
+                          style="font-size: 0.65rem; letter-spacing: 0.08em;">
+                        <i class="bi bi-info-circle-fill text-primary me-1"></i> EXAMPLE COMMUNITY DECK
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div class="tiers-section bg-white">
+    <div class="container">
+        <div class="text-center mb-5 reveal-up">
+            <div class="section-eyebrow mb-3">Competitive Progression</div>
+            <h2 class="section-heading text-dark mb-3">
+                Ascend the <span class="text-primary">Competitive Tiers</span>
+            </h2>
+            <p class="text-muted fw-bold mx-auto" style="max-width: 580px; font-size: 1.05rem;">
+                Unlock elite status as you progress through 9 tiers of mastery.
+            </p>
+        </div>
+
+        <div class="tier-track-wrapper mb-5 reveal-up delay-100">
+            <div class="tier-track d-flex justify-content-between align-items-center gap-2 hide-scrollbar">
+                <div class="tier-item"><span class="rank-text legend">LEGEND</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text dragon">DRAGON</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text challenger">CHALLENGER</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text master">MASTER</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text diamond">DIAMOND</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text gold">GOLD</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text iron">IRON</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text wood">WOOD</span></div>
+                <div class="tier-connector"></div>
+                <div class="tier-item"><span class="rank-text sprout">SPROUT</span></div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center reveal-up delay-200 pb-5">
+            <div class="col-lg-10">
+                <div class="reward-hud p-5">
+                    <div class="row align-items-center g-4">
+                        <div class="col-md-4 text-center">
+                            <div class="d-inline-flex align-items-center gap-3">
+                                <div class="xp-badge-lg">XP</div>
+                                <i class="bi bi-plus-lg text-primary fs-3"></i>
+                                <div class="gold-coin" style="width: 66px; height: 66px; font-size: 1.7rem; border-width: 4px; box-shadow: 0 6px 0 #B45309;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-8 text-md-start mt-3 mt-md-0 ps-md-5">
+                            <h3 class="fw-black text-dark mb-2">Unlock Premium Rewards</h3>
+                            <p class="text-muted fw-bold mb-4" style="line-height: 1.65;">
+                                Every Sunday at midnight, turn your accumulated skill into Gold. Unlock
+                                profile customizations and exclusive shop items to secure your legacy.
+                            </p>
+                            <div class="promote-badge">
+                                <i class="bi bi-lightning-charge-fill text-warning"></i>
+                                TOP 20% PROMOTE TO NEXT LEAGUE
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="roadmap-section bg-soft-blue-gradient">
+    <div class="container text-center">
+        <div class="reveal-up">
+            <div class="section-eyebrow mb-3">JLPT Progression</div>
+            <h2 class="section-heading text-dark mb-5">The Roadmap to 100% Mastery</h2>
+        </div>
+
+        <div class="roadmap-container d-flex justify-content-between align-items-center px-md-5 reveal-up delay-100">
+            <div class="roadmap-line"></div>
+            <div class="roadmap-node"         onclick="showLevelInfo('N5')" title="N5: The Basics">N5</div>
+            <div class="roadmap-node node-locked" onclick="showLevelInfo('N4')" title="N4: Conversation">N4</div>
+            <div class="roadmap-node node-locked" onclick="showLevelInfo('N3')" title="N3: Intermediate">N3</div>
+            <div class="roadmap-node node-locked" onclick="showLevelInfo('N2')" title="N2: Business">N2</div>
+            <div class="roadmap-node node-locked" onclick="showLevelInfo('N1')" title="N1: Native Legend">N1</div>
+        </div>
+
+        <p class="mt-5 text-muted fw-bold small reveal-up delay-200" style="letter-spacing: 0.04em;">
+            <i class="bi bi-hand-index-thumb text-primary me-1"></i>
+            Click a mastery level to reveal the required curriculum and certification goals.
+        </p>
+
+        <div id="quest-requirement-card" class="static-card p-5 mx-auto mt-5 text-start border-0"
+             style="max-width: 850px; display: none;">
+            <div class="d-flex justify-content-between align-items-start mb-5 flex-wrap gap-3">
+                <div>
+                    <h2 id="quest-title" class="fw-black mb-2" style="font-size: 2rem; letter-spacing: -0.03em;"></h2>
+                    <div id="rank-badge-container"></div>
+                </div>
+                <div class="feature-icon mb-0" style="width: 56px; height: 56px; font-size: 1.4rem;">
+                    <i class="bi bi-hammer"></i>
+                </div>
+            </div>
+
+            <div class="row g-5">
+                <div class="col-md-7">
+                    <h6 class="fw-black small text-muted mb-4 text-uppercase" style="letter-spacing: 0.1em;">
+                        <i class="bi bi-map me-2"></i>Learning Path
+                    </h6>
+                    <div id="quest-curriculum" class="study-path-line"></div>
+                </div>
+                <div class="col-md-5">
+                    <h6 class="fw-black small text-muted mb-4 text-uppercase" style="letter-spacing: 0.1em;">
+                        <i class="bi bi-trophy me-2"></i>Mastery Goals
+                    </h6>
+                    <div id="quest-goals" class="d-flex flex-column gap-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@*<div class="quest-log-section bg-white">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+
+                <div class="text-center mb-5 reveal-up">
+                    <div class="d-inline-flex align-items-center gap-2 mb-3">
+                        <span class="live-dot"></span>
+                        <span class="section-eyebrow" style="color: #0ea5e9;">LIVE FEED</span>
+                    </div>
+                    <h2 class="section-heading text-dark mb-2">
+                        GitHub <span class="text-primary">Updates</span>
+                    </h2>
+                    <p class="text-muted fw-bold small mb-4">
+                        Real-time developer logs from the NipponQuest repository.
+                    </p>
+                    <a href="https://github.com/marclourens19/NipponQuest" target="_blank"
+                       class="btn btn-outline-dark btn-sm rounded-pill px-4 fw-black hover-lift">
+                        <i class="bi bi-github me-2"></i>VIEW REPO
+                    </a>
+                </div>
+
+                <div class="quest-log-container p-2 bg-white rounded-4 shadow-sm border reveal-up delay-100">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var commit in Model)
+                        {
+                            var msg  = commit.Commit.Message.ToLower();
+                            var icon = "bi-hammer";
+                            if (msg.Contains("feat") || msg.Contains("add"))             { icon = "bi-hammer"; }
+                            else if (msg.Contains("fix") || msg.Contains("bug"))         { icon = "bi-wrench-adjustable"; }
+                            else if (msg.Contains("ui") || msg.Contains("css") || msg.Contains("layout")) { icon = "bi-gear-wide-connected"; }
+
+                            <div class="commit-item d-flex gap-3">
+                                <div class="d-flex align-items-center justify-content-center bg-light rounded-3 flex-shrink-0"
+                                     style="width: 40px; height: 40px; border: 1px solid rgba(0,0,0,0.05);">
+                                    <i class="bi @icon text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1" style="min-width: 0;">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <h6 class="fw-black mb-0 text-dark small text-truncate" style="line-height: 1.4;">
+                                            @commit.Commit.Message.Split('\n')[0]
+                                        </h6>
+                                        <span class="badge bg-light text-muted border fw-bold flex-shrink-0"
+                                              style="font-size: 0.58rem; letter-spacing: 0.04em;">
+                                            @commit.Sha.Substring(0, 7).ToUpper()
+                                        </span>
+                                    </div>
+                                    <p class="small text-muted fw-bold mb-0 mt-1" style="font-size: 0.68rem; letter-spacing: 0.03em;">
+                                        <span class="text-primary">QUEST COMPLETED</span>
+                                        &bull; @commit.Commit.Author.Date.ToString("MMM dd, yyyy")
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-cloud-slash fs-1" style="color: #e2e8f0;"></i>
+                            <p class="text-muted fw-bold small mt-2">Connecting to HQ...</p>
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>*@
+
+
+<div class="cta-section bg-white reveal-up">
+    <div class="container">
+        <div class="cta-banner text-center text-white shadow-lg quest-pulse">
+            <h2 class="fw-black mb-3 position-relative" style="font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -0.03em; z-index: 1;">
+                Ready to start your quest?
+            </h2>
+            <p class="lead mb-5 fw-bold position-relative" style="opacity: 0.88; z-index: 1; font-size: 1.1rem;">
+                Join learners worldwide mastering Japanese the competitive way.
+            </p>
+            <div class="position-relative" style="z-index: 1;">
+                <a asp-area="Identity" asp-page="/Account/Register"
+                   class="btn btn-light btn-lg rounded-pill fw-black px-5 py-3 text-primary shadow btn-sheen">
+                    CLAIM YOUR PLACE IN THE ARENA
+                </a>
+            </div>
+            <p class="cta-free-tag position-relative" style="z-index: 1;">100% FREE FOREVER</p>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+    // ── SCROLL REVEAL ──
+    document.addEventListener('DOMContentLoaded', () => {
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('active'); });
+        }, { threshold: 0.08, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.reveal-up').forEach(el => obs.observe(el));
+    });
+
+    // ── QUIZ ──
+    const quizData = [
+        { q: 'あ', a: 'A',  options: ['KA', 'A',  'SA'] },
+        { q: 'い', a: 'I',  options: ['I',  'E',  'O']  },
+        { q: 'う', a: 'U',  options: ['N',  'U',  'RA'] },
+        { q: 'え', a: 'E',  options: ['RO', 'RU', 'E']  },
+        { q: 'お', a: 'O',  options: ['O',  'WA', 'WO'] }
+    ];
+    let currentQuest = 0, score = 0;
+
+    function initQuiz() {
+        const quest = quizData[currentQuest];
+        document.getElementById('quiz-progress').innerText = `QUEST ${currentQuest + 1} / 5`;
+        document.getElementById('hiragana-display').innerText = quest.q;
+        const btnContainer = document.getElementById('answer-buttons');
+        if (!btnContainer) return;
+        btnContainer.innerHTML = '';
+        quest.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline-primary fw-black trial-answer-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt, btn);
+            btnContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(choice, btn) {
+        const correct = quizData[currentQuest].a;
+        document.querySelectorAll('.trial-answer-btn').forEach(b => b.disabled = true);
+        if (choice === correct) {
+            score++;
+            btn.classList.replace('btn-outline-primary', 'btn-success');
+            btn.classList.add('text-white');
+            showFeedback();
+        } else {
+            btn.classList.replace('btn-outline-primary', 'btn-danger');
+            btn.classList.add('text-white');
+            setTimeout(nextQuestion, 600);
+        }
+    }
+
+    function showFeedback() {
+        const fb = document.getElementById('feedback-check');
+        if (!fb) return;
+        fb.classList.remove('d-none');
+        setTimeout(() => {
+            fb.style.transition = 'opacity 0.3s ease';
+            fb.style.opacity = '0';
+            setTimeout(() => {
+                fb.classList.add('d-none');
+                fb.style.opacity = '1';
+                nextQuestion();
+            }, 300);
+        }, 900);
+    }
+
+    function nextQuestion() {
+        currentQuest++;
+        currentQuest < quizData.length ? initQuiz() : showResults();
+    }
+
+    function showResults() {
+        document.getElementById('quiz-game').classList.add('d-none');
+        document.getElementById('quiz-result').classList.remove('d-none');
+        document.getElementById('final-score').innerText = `${score} / 5`;
+    }
+
+    function resetQuiz() {
+        currentQuest = 0; score = 0;
+        document.getElementById('quiz-game').classList.remove('d-none');
+        document.getElementById('quiz-result').classList.add('d-none');
+        initQuiz();
+    }
+
+    // ── ROADMAP ──
+    function showLevelInfo(level) {
+        const requirements = {
+            'N5': {
+                color: '#22c55e', rankClass: 'sprout', rankName: 'Beginner Mastery',
+                path: [
+                    { step: 'KANA ORIGINS',     desc: 'Master Hiragana & Katakana stroke order and phonetics.' },
+                    { step: 'GENKI I: PHASE 1', desc: 'Complete Lessons 1-6: Greetings, shopping, and daily time.' },
+                    { step: 'GENKI I: PHASE 2', desc: 'Complete Lessons 7-12: Te-form, physical descriptions, and past tense.' },
+                    { step: 'PARTICLE SYNC',    desc: 'Internalize WA, GA, O, NI, and DE usage in basic sentences.' }
+                ],
+                goals: ['100 Kanji (The Foundation)', '800 Vocabulary Words', 'N5 Mock Exam (90%+ Accuracy)']
+            },
+            'N4': {
+                color: '#0ea5e9', rankClass: 'diamond', rankName: 'Elementary Mastery',
+                path: [
+                    { step: 'GENKI II: CORE',       desc: 'Complete Lessons 13-23: Potential, Volitional, and Passive forms.' },
+                    { step: 'KEIGO BASICS',          desc: 'Understand the hierarchy of polite and humble Japanese.' },
+                    { step: 'CONJUNCTION MASTERY',   desc: 'Connect complex thoughts using NNODE, TAME, and SHI.' }
+                ],
+                goals: ['300 Kanji (Standard Set)', '1,500 Vocabulary Words', 'Understand 70% of Children\'s Media']
+            },
+            'N3': {
+                color: '#a855f7', rankClass: 'master', rankName: 'Intermediate Mastery',
+                path: [
+                    { step: 'THE TOBIRA BRIDGE', desc: 'Transition from textbook Japanese to natural phrasing.' },
+                    { step: 'CASUAL NUANCE',     desc: 'Master gender-neutral vs. masculine/feminine casual speech.' },
+                    { step: 'TRANSITIVE SYNC',   desc: 'Perfect the Transitive vs. Intransitive verb pairings.' }
+                ],
+                goals: ['650 Kanji (Intermediate Set)', '3,750 Vocabulary Words', 'Read basic NHK News Web Easy']
+            },
+            'N2': {
+                color: '#ef4444', rankClass: 'dragon', rankName: 'Advanced Mastery',
+                path: [
+                    { step: 'LITERARY FLOW',    desc: 'Understand formal written Japanese used in essays and news.' },
+                    { step: 'BUSINESS PROTOCOL',desc: 'Master Sonkeigo and Kenjougo for professional environments.' },
+                    { step: 'SOCIAL CONTEXT',   desc: 'Detect sarcasm, irony, and cultural subtext in conversation.' }
+                ],
+                goals: ['1,000 Kanji (Advanced Set)', '6,000 Vocabulary Words', 'Work in a Japanese Environment']
+            },
+            'N1': {
+                color: '#fbbf24', rankClass: 'legend', rankName: 'Legendary Mastery',
+                path: [
+                    { step: 'NATIVE IMMERSION',  desc: 'Read complex literature and philosophical essays.' },
+                    { step: 'CLASSICAL BASICS',  desc: 'Understand the roots of modern grammar and archaic kanji.' },
+                    { step: 'DIALECT FLUENCY',   desc: 'Recognize major regional dialects (Kansai-ben, etc.).' }
+                ],
+                goals: ['2,000+ Kanji (Total Master Set)', '10,000+ Vocabulary Words', '100% Native Fluency']
+            }
+        };
+
+        const data = requirements[level];
+        const card = document.getElementById('quest-requirement-card');
+
+        card.style.borderTop = `6px solid ${data.color}`;
+        document.getElementById('quest-title').innerText = level + ' Certification Quest';
+        document.getElementById('rank-badge-container').innerHTML =
+            `<span class="rank-text ${data.rankClass}">${data.rankName}</span>`;
+
+        document.getElementById('quest-curriculum').innerHTML = data.path.map((p, i) => `
+            <div class="path-step mb-4" style="--step-color: ${data.color}">
+                <div class="fw-black text-uppercase mb-1" style="font-size: 0.68rem; color: ${data.color}; letter-spacing: 0.06em;">Step 0${i+1}: ${p.step}</div>
+                <div class="fw-bold text-dark small" style="line-height: 1.5;">${p.desc}</div>
+            </div>`).join('');
+
+        document.getElementById('quest-goals').innerHTML = data.goals.map(g => `
+            <div class="p-3 rounded-4 bg-light d-flex align-items-center gap-3 border border-white shadow-sm">
+                <i class="bi bi-check-circle-fill fs-5" style="color: ${data.color}; flex-shrink:0;"></i>
+                <span class="fw-black text-dark small">${g}</span>
+            </div>`).join('');
+
+        card.style.display = 'block';
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    document.addEventListener('DOMContentLoaded', initQuiz);
+</script>
+}

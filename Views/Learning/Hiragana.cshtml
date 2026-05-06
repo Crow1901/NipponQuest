@@ -1,0 +1,182 @@
+﻿<style>
+    /* Premium Tab Navigation Styles */
+    .kana-nav .nav-link {
+        color: #64748b; /* Grey inactive text */
+        font-weight: 700;
+        border-radius: 50rem;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border: 2px solid transparent;
+        font-size: 0.875rem;
+    }
+    .kana-nav .nav-link:hover:not(.active) {
+        background-color: #f1f5f9;
+        color: #0f172a;
+    }
+    .kana-nav .nav-link.active {
+        background-color: #0ea5e9; /* Blue active pill */
+        color: #ffffff;
+        font-weight: 900;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    /* Card Polish */
+    .kana-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .kana-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+        border-color: rgba(14, 165, 233, 0.3);
+    }
+    .tab-pane.active {
+        animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    @@keyframes fadeInScale {
+        0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+</style>
+
+@{
+    var hiraganaSections = new List<(string Title, string TabTitle, string ID, (string Kana, string Romaji, string Note)[] Items)> {
+        ("The Vowels", "Vowels", "vowels", new[] {
+            ("あ", "a", "Ah as in Father."), ("い", "i", "Ee as in Feet."),
+            ("う", "u", "Oo as in Boot."), ("え", "e", "Eh as in Met."), ("お", "o", "Oh as in Boat.")
+        }),
+        ("K & G Rows (Parallel)", "K & G", "k-g-row", new[] {
+            ("か", "ka", "Kah as in Car."), ("が", "ga", "Gah as in Garden."),
+            ("き", "ki", "Kee as in Key."), ("ぎ", "gi", "Gee as in Geese."),
+            ("く", "ku", "Koo as in Cuckoo."), ("ぐ", "gu", "Goo as in Goose."),
+            ("け", "ke", "Keh as in Kelp."), ("げ", "ge", "Geh as in Get."),
+            ("こ", "ko", "Koh as in Co-op."), ("ご", "go", "Goh as in Golf.")
+        }),
+        ("S & Z Rows (Parallel)", "S & Z", "s-z-row", new[] {
+            ("さ", "sa", "Sah as in Sauna."), ("ざ", "za", "Zah as in Zara."),
+            ("し", "shi", "Shee as in Sheep."), ("じ", "ji", "Jee as in Jeep."),
+            ("す", "su", "Soo as in Soon."), ("ず", "zu", "Zoo as in Zoo."),
+            ("せ", "se", "Seh as in Set."), ("ぜ", "ze", "Zeh as in Zen."),
+            ("そ", "so", "Soh as in Soft."), ("ぞ", "zo", "Zoh as in Zone.")
+        }),
+        ("T & D Rows (Parallel)", "T & D", "t-d-row", new[] {
+            ("た", "ta", "Tah as in Target."), ("だ", "da", "Dah as in Dad."),
+            ("ち", "chi", "Chee as in Cheese."), ("ぢ", "ji", "Jee as in Jeep."),
+            ("つ", "tsu", "Tsu as in Ea-ts-u."), ("づ", "zu", "Zoo as in Zoo."),
+            ("て", "te", "Teh as in Tell."), ("で", "de", "Deh as in Den."),
+            ("と", "to", "Toh as in Toe."), ("ど", "do", "Doh as in Door.")
+        }),
+        ("N-Row", "N", "n-row", new[] {
+            ("な", "na", "Nah as in Knot."), ("に", "ni", "Nee as in Knee."),
+            ("ぬ", "nu", "Noo as in Newt."), ("ね", "ne", "Neh as in Net."), ("の", "no", "Noh as in Nose.")
+        }),
+        ("H, B & P Rows (Parallel)", "H, B, P", "h-b-p-row", new[] {
+            ("は", "ha", "Hah as in Ha-ha."), ("ば", "ba", "Bah as in Ball."), ("ぱ", "pa", "Pah as in Park."),
+            ("ひ", "hi", "Hee as in Heat."), ("び", "bi", "Bee as in Bee."), ("ぴ", "pi", "Pee as in Peek."),
+            ("ふ", "fu", "Foo as in Fuji."), ("ぶ", "bu", "Boo as in Boot."), ("ぷ", "pu", "Poo as in Pool."),
+            ("へ", "he", "Heh as in Help."), ("べ", "be", "Beh as in Bed."), ("ぺ", "pe", "Peh as in Pen."),
+            ("ほ", "ho", "Hoh as in Home."), ("ぼ", "bo", "Boh as in Boat."), ("ぽ", "po", "Poh as in Poke.")
+        }),
+        ("M-Row", "M", "m-row", new[] {
+            ("ま", "ma", "Mah as in Mom."), ("み", "mi", "Mee as in Me."),
+            ("む", "mu", "Moo as in Moon."), ("め", "me", "Meh as in Men."), ("も", "mo", "Moh as in More.")
+        }),
+        ("Y-Row", "Y", "y-row", new[] {
+            ("や", "ya", "Yah as in Yard."), ("ゆ", "yu", "Yoo as in You."), ("よ", "yo", "Yoh as in Yoyo.")
+        }),
+        ("R-Row", "R", "r-row", new[] {
+            ("ら", "ra", "Rah as in Rock."), ("り", "ri", "Ree as in Reed."),
+            ("る", "ru", "Roo as in Root."), ("れ", "re", "Reh as in Red."), ("ろ", "ro", "Roh as in Road.")
+        }),
+        ("W-Row & N", "W & N", "w-n-row", new[] {
+            ("わ", "wa", "Wah as in Water."), ("を", "wo", "Oh as in Boat."), ("ん", "n", "Nal 'n' as in End.")
+        })
+    };
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-2 fw-black mb-3 shadow-sm" style="letter-spacing: 1px;">COURSE 01</span>
+        <h1 class="fw-black display-4" style="letter-spacing: -2px;">Hiragana <span class="text-primary">Mastery</span></h1>
+        <p class="lead text-muted fw-bold">Master the complete phonetic system. Select a row to begin your training.</p>
+    </div>
+
+    <div class="d-flex justify-content-center mb-5 sticky-top py-3" style="top: 70px; z-index: 100; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);">
+        <ul class="nav nav-pills kana-nav bg-white p-2 rounded-pill shadow-sm border d-inline-flex gap-1 overflow-auto hide-scrollbar flex-nowrap" role="tablist" style="max-width: 95vw;">
+            @for (int i = 0; i < hiraganaSections.Count; i++)
+            {
+                var kanaGroup = hiraganaSections[i]; 
+                var isActive = i == 0 ? "active" : "";
+                
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @isActive" id="tab-@kanaGroup.ID" data-bs-toggle="pill" data-bs-target="#pane-@kanaGroup.ID" type="button" role="tab" aria-controls="pane-@kanaGroup.ID" aria-selected="@(i == 0 ? "true" : "false")">
+                        @kanaGroup.TabTitle
+                    </button>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="tab-content w-100" id="kanaTabContent">
+        @for (int i = 0; i < hiraganaSections.Count; i++)
+        {
+            var kanaGroup = hiraganaSections[i]; 
+            var isActivePane = i == 0 ? "show active" : "";
+            
+            <div class="tab-pane fade @isActivePane" id="pane-@kanaGroup.ID" role="tabpanel" aria-labelledby="tab-@kanaGroup.ID" tabindex="0">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        
+                        <div class="d-flex align-items-center mb-4 border-bottom pb-3 gap-3">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px;">
+                                <i class="bi bi-book-half fs-5"></i>
+                            </div>
+                            <h3 class="fw-black mb-0 text-dark">@kanaGroup.Title</h3>
+                        </div>
+
+                        <div class="row g-4">
+                            @foreach (var item in kanaGroup.Items)
+                            {
+                                <div class="@(kanaGroup.Items.Length % 3 == 0 ? "col-md-4" : "col-md-6")">
+                                    <div class="kana-card static-card p-0 overflow-hidden bg-white rounded-4 shadow-sm h-100">
+                                        <div class="row g-0 h-100">
+                                            <div class="col-4 bg-primary bg-gradient d-flex flex-column align-items-center justify-content-center py-4 text-white">
+                                                <span class="fw-black lh-1 mb-1" style="font-size: 3.5rem;">@item.Kana</span>
+                                                <span class="fw-black text-uppercase small opacity-75" style="letter-spacing: 2px;">@item.Romaji</span>
+                                            </div>
+                                            <div class="col-8 p-3 d-flex flex-column justify-content-center">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <h4 class="fw-black text-dark mb-0">@item.Romaji.ToUpper()</h4>
+                                                    
+                                                    @* RESTORED AUDIO BUTTON (Blue) *@
+                                                    <button class="btn btn-light text-primary border rounded-circle shadow-sm hover-scale d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" onclick="speak('@item.Kana')" title="Play Audio">
+                                                        <i class="bi bi-volume-up-fill fs-5"></i>
+                                                    </button>
+
+                                                </div>
+                                                <p class="small text-muted fw-bold mb-0">@item.Note</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function speak(text) {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = 'ja-JP';
+        msg.rate = 0.8;
+        window.speechSynthesis.speak(msg);
+    }
+</script>

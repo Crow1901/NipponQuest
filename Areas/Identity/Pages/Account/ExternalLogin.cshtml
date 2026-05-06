@@ -1,0 +1,59 @@
+﻿@page
+@model ExternalLoginModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="container py-5 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 col-xl-5">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden p-4 p-md-5">
+                
+                <div class="text-center mb-5">
+                    <div class="bg-primary-blue bg-opacity-10 text-primary-blue rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-person-check-fill fs-2"></i>
+                    </div>
+                    <h2 class="fw-black text-dark m-0 text-uppercase tracking-tight" style="font-size: 2.2rem; letter-spacing: -1px;">ALMOST THERE!</h2>
+                    <p class="text-muted fw-bold mt-2 mb-1">Successfully linked with <strong class="text-primary-blue">@Model.ProviderDisplayName</strong>.</p>
+                    <p class="small text-muted fw-bold px-3">To finalize your NipponQuest profile, please choose your unique username below.</p>
+                </div>
+
+                <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small fw-bold mb-3" role="alert"></div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2 ms-1">
+                            <label asp-for="Input.GamerTag" class="fw-black small text-muted text-uppercase mb-0 tracking-wider">USERNAME</label>
+                            <span class="badge bg-primary-blue bg-opacity-10 text-primary-blue border border-primary-subtle fw-bold rounded-pill" style="font-size: 0.65rem;">MAX 12 CHARS</span>
+                        </div>
+                        <input asp-for="Input.GamerTag" class="form-control form-control-lg fw-black rounded-4 bg-light border-light-subtle shadow-sm custom-input" placeholder="e.g. ShadowQuest" aria-required="true" maxlength="12" />
+                        <span asp-validation-for="Input.GamerTag" class="text-danger small fw-bold mt-2 d-block"></span>
+                    </div>
+
+                    <div class="mb-5">
+                        <label asp-for="Input.Email" class="fw-black small text-muted text-uppercase mb-2 ms-1 tracking-wider">CONFIRMED EMAIL</label>
+                        <div class="position-relative">
+                            <input asp-for="Input.Email" class="form-control form-control-lg fw-black rounded-4 bg-light border-light-subtle shadow-sm custom-input pe-5" readonly style="opacity: 0.7; cursor: not-allowed;" />
+                            <i class="bi bi-lock-fill position-absolute end-0 top-50 translate-middle-y me-4 text-muted opacity-75"></i>
+                        </div>
+                        <span asp-validation-for="Input.Email" class="text-danger small fw-bold mt-2 d-block"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-blue rounded-pill fw-black w-100 py-3 shadow-sm text-uppercase tracking-wider hover-lift">
+                        FINALIZE QUEST REGISTRATION
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-4 border-top border-light-subtle">
+                    <p class="small text-muted fw-bold mb-0">
+                        <i class="bi bi-shield-check text-success me-1"></i> Registering securely as <span class="text-dark">@Model.Input.Email</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,160 @@
+﻿@model NipponQuest.Models.Flashcard
+
+<div class="container py-5 mt-4">
+    <!-- 1. TOP HEADER SECTION -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-11">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+                <div>
+                    <h1 class="fw-black text-dark m-0 text-uppercase tracking-tight d-flex align-items-center flex-wrap gap-3" style="font-size: 2.8rem; letter-spacing: -1px;">
+                        <span>ADD <span class="text-primary hero-glow-text">FLASHCARD</span></span>
+                    </h1>
+                    <p class="text-muted fw-bold m-0 mt-1 text-uppercase tracking-wider" style="font-size: 0.85rem;">Expand your deck with new vocabulary and knowledge</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.DeckId" class="btn btn-white rounded-pill px-4 fw-bold shadow-sm text-muted d-flex align-items-center transition-all hover-lift">
+                        <i class="bi bi-arrow-left me-2 fs-5"></i> BACK TO DECK
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. FORM CARD -->
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+            <div class="static-card border-0 rounded-4 shadow-sm bg-white mb-5 p-4 p-md-5 transition-all" style="border-top: 5px solid #0ea5e9 !important;">
+                <form asp-action="AddCard" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3 fw-bold"></div>
+                    
+                    <input type="hidden" asp-for="DeckId" />
+
+                    <!-- Front Side -->
+                    <div class="mb-4">
+                        <label class="form-label fw-black text-dark small text-uppercase tracking-wider ms-1">
+                            Front <span class="text-muted opacity-50 text-lowercase fw-bold">(Japanese)</span> <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="FrontText" class="form-control form-control-lg fw-black text-dark text-japanese bg-light border-0 shadow-sm rounded-4 py-3"
+                               placeholder="漢字 / かな" required />
+                        <span asp-validation-for="FrontText" class="text-danger small fw-bold mt-1 d-block ms-1"></span>
+                    </div>
+
+                    <!-- Back Side -->
+                    <div class="mb-4">
+                        <label class="form-label fw-black text-dark small text-uppercase tracking-wider ms-1">
+                            Back <span class="text-muted opacity-50 text-lowercase fw-bold">(Meaning)</span> <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="BackText" class="form-control form-control-lg fw-bold text-dark bg-light border-0 shadow-sm rounded-4 py-3"
+                               placeholder="e.g., Apple, To eat, etc." required />
+                        <span asp-validation-for="BackText" class="text-danger small fw-bold mt-1 d-block ms-1"></span>
+                    </div>
+
+                    <!-- Media Assets Section -->
+                    <div class="mb-5 pt-4 border-top border-light-subtle">
+                        <h6 class="text-dark small fw-black text-uppercase tracking-wider mb-3 ms-1">
+                            Attach Media Assets <span class="text-muted opacity-50 text-lowercase fw-bold">(Optional)</span>
+                        </h6>
+                        
+                        <div class="d-flex flex-column flex-sm-row gap-3">
+                            <!-- Image Bubble -->
+                            <label class="bubble-btn bubble-image flex-grow-1 shadow-sm transition-all hover-lift">
+                                <i class="bi bi-image fs-5 me-2 text-info opacity-75"></i>
+                                <span class="fw-black small text-uppercase tracking-wider text-dark">Add Image</span>
+                                <input type="file" name="imageFile" class="d-none" accept="image/*" onchange="updateBubble(this, 'img-status')" />
+                                <i id="img-status" class="bi bi-check-circle-fill ms-auto d-none text-success fs-5"></i>
+                            </label>
+                            
+                            <!-- Audio Bubble -->
+                            <label class="bubble-btn bubble-audio flex-grow-1 shadow-sm transition-all hover-lift">
+                                <i class="bi bi-volume-up-fill fs-5 me-2 text-indigo opacity-75"></i>
+                                <span class="fw-black small text-dark text-uppercase tracking-wider">Add Audio</span>
+                                <input type="file" name="audioFile" class="d-none" accept="audio/*" onchange="updateBubble(this, 'aud-status')" />
+                                <i id="aud-status" class="bi bi-check-circle-fill ms-auto d-none text-success fs-5"></i>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-black py-3 shadow-sm text-uppercase tracking-wider btn-cta-premium transition-all hover-lift">
+                            <i class="bi bi-plus-lg me-2"></i> ADD TO DECK
+                        </button>
+                        <a asp-action="Edit" asp-route-id="@Model.DeckId" class="btn btn-light btn-lg rounded-pill fw-black text-muted text-uppercase tracking-wider shadow-sm py-3 text-center transition-all hover-lift">
+                            CANCEL
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f8fafc; }
+
+    /* Specific Overrides */
+    .tracking-tight { letter-spacing: -1px; }
+    .tracking-wider { letter-spacing: 1px; }
+    .text-japanese { font-size: 1.4rem; letter-spacing: 1px; }
+    .text-indigo { color: #6366f1 !important; }
+    
+    .hero-glow-text { text-shadow: 0 0 20px rgba(14, 165, 233, 0.2); }
+
+    /* Buttons */
+    .btn-white { background: #fff; border: 1px solid #e2e8f0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-white:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .hover-blue:hover { color: #0ea5e9 !important; border-color: #0ea5e9 !important; }
+
+    /* Hover Utilities */
+    .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important; }
+    .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    
+    /* Input Focus */
+    .form-control:focus {
+        border-color: #0ea5e9 !important;
+        box-shadow: 0 0 0 0.25rem rgba(14, 165, 233, 0.15) !important;
+    }
+
+    /* Smooth Bubble Buttons */
+    .bubble-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 16px 20px;
+        border-radius: 16px;
+        cursor: pointer;
+        border: 2px solid #e2e8f0;
+        background-color: #ffffff;
+    }
+    .bubble-image:hover { background-color: #f0f9ff; border-color: #0ea5e9; }
+    .bubble-image:hover i:first-child { color: #0ea5e9 !important; opacity: 1 !important; }
+    
+    .bubble-audio:hover { background-color: #f5f3ff; border-color: #6366f1; }
+    .bubble-audio:hover i:first-child { color: #6366f1 !important; opacity: 1 !important; }
+
+    /* Active State for Bubbles */
+    .bubble-active {
+        border-color: #10b981 !important;
+        background-color: #f0fdf4 !important;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1) !important;
+    }
+    .bubble-active span { color: #10b981 !important; }
+</style>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        function updateBubble(input, statusIconId) {
+            const icon = document.getElementById(statusIconId);
+            const parentLabel = input.closest('.bubble-btn');
+            
+            if (input.files && input.files[0]) {
+                icon.classList.remove('d-none');
+                parentLabel.classList.add('bubble-active');
+            } else {
+                icon.classList.add('d-none');
+                parentLabel.classList.remove('bubble-active');
+            }
+        }
+    </script>
+}

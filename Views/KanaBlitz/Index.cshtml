@@ -1,0 +1,1316 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<NipponQuest.Models.ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "KanaBlitz Arena";
+    var currentUser = await UserManager.GetUserAsync(User);
+}
+
+<style>
+    /* BASE */
+    .reveal-up { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal-up.active { opacity: 1; transform: translateY(0); }
+
+    /* HERO META */
+    .hero-meta {
+        display: inline-flex; align-items: center; gap: 18px;
+        flex-wrap: wrap; justify-content: center;
+        font-size: 0.78rem; font-weight: 800; color: #64748b;
+        letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .hero-meta .meta-chip { display: inline-flex; align-items: center; gap: 6px; }
+    .hero-meta .meta-chip i { color: #f59e0b; font-size: 0.95rem; }
+    .hero-meta .meta-dot { color: #cbd5e1; font-weight: 900; }
+
+    /* STEP PROGRESS */
+    .step-progress { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 1.75rem; flex-wrap: wrap; }
+    .step-pill {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 16px; border-radius: 50px;
+        background: #f1f5f9; color: #94a3b8;
+        font-weight: 900; font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase;
+        transition: all 250ms ease; border: 2px solid transparent;
+    }
+    .step-pill .step-icon {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #cbd5e1; color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.65rem; transition: all 250ms ease;
+    }
+    .step-pill.active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .step-pill.active .step-icon { background: #3b82f6; }
+    .step-pill.done { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .step-pill.done .step-icon { background: #22c55e; }
+    .step-connector { width: 32px; height: 2px; background: #e2e8f0; border-radius: 2px; transition: all 250ms ease; }
+    .step-connector.done { background: #22c55e; }
+
+    /* LOBBY CARDS */
+    .setup-card {
+        background: #ffffff;
+        border: 2px solid #f1f5f9;
+        border-radius: 24px;
+        transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease, background 250ms ease;
+        cursor: pointer;
+        height: 100%;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        position: relative; overflow: hidden;
+    }
+    .setup-card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(0,0,0,0.08); border-color: #e2e8f0; }
+    .setup-card.selected { border-width: 3px; transform: translateY(-4px) scale(1.03); box-shadow: 0 0 0 5px rgba(14, 165, 233, 0.1), 0 16px 32px rgba(14, 165, 233, 0.12); }
+
+    .alpha-select[data-alpha="hiragana"].selected { border-color: #0ea5e9; background: #f0f9ff; }
+    .alpha-select[data-alpha="katakana"].selected { border-color: #ef4444; background: #fef2f2; }
+    .alpha-select[data-alpha="mixed"].selected    { border-color: #f59e0b; background: #fffbeb; }
+    .alpha-select[data-alpha="dakuten"].selected  { border-color: #8b5cf6; background: #f5f3ff; }
+
+    .diff-select[data-diff="easy"]     { background: #f8fdfa; }
+    .diff-select[data-diff="normal"]   { background: #ffffff; }
+    .diff-select[data-diff="hard"]     { background: #fbfaff; }
+    .diff-select[data-diff="insanity"] { background: #fffafa; }
+
+    .diff-select[data-diff="easy"].selected     { border-color: #22c55e; background: #f0fdf4; }
+    .diff-select[data-diff="normal"].selected   { border-color: #3b82f6; background: #eff6ff; }
+    .diff-select[data-diff="hard"].selected     { border-color: #a855f7; background: #faf5ff; box-shadow: 0 0 0 5px rgba(168, 85, 247, 0.12), 0 0 30px rgba(168, 85, 247, 0.25); }
+    .diff-select[data-diff="insanity"].selected { border-color: #ef4444; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12), 0 0 30px rgba(239, 68, 68, 0.3); }
+
+    @@keyframes insanity-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.15); }
+        50%      { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    }
+    .diff-select[data-diff="insanity"]:not(.selected):not(.locked) { animation: insanity-pulse 2.5s ease-in-out infinite; }
+    .diff-select[data-diff="hard"]:not(.selected):not(.locked):hover { box-shadow: 0 14px 30px rgba(168, 85, 247, 0.18); }
+
+    /* LOCKED STATE */
+    .setup-card.locked {
+        cursor: not-allowed;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        opacity: 0.92;
+    }
+    .setup-card.locked:hover { transform: none; box-shadow: none; border-color: #e2e8f0; }
+    .setup-card.locked .alpha-label,
+    .setup-card.locked .diff-icon-wrap i,
+    .setup-card.locked .time-row,
+    .setup-card.locked .reward-mult-row { opacity: 0.45; filter: grayscale(0.6); }
+    .lock-overlay {
+        position: absolute; top: 10px; right: 10px;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: #0f172a; color: #fde68a;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.95rem; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+        z-index: 2;
+    }
+    .lock-req {
+        position: absolute; bottom: 10px; left: 10px; right: 10px;
+        font-size: 0.6rem; font-weight: 900; letter-spacing: 1px;
+        text-transform: uppercase; color: #64748b;
+        background: #ffffff; border: 1px solid #e2e8f0;
+        padding: 4px 8px; border-radius: 8px;
+        text-align: center; line-height: 1.3;
+    }
+
+    .even-row { display: flex; flex-wrap: wrap; }
+    .even-row > [class*="col-"] { display: flex; }
+
+    /* HUD */
+    .hud-panel { background: #0f172a; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .heart-icon { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4)); transition: all 0.3s ease; }
+    .heart-lost { color: #334155; filter: none; transform: scale(0.8); opacity: 0.5; }
+
+    /* ARENA */
+    .arena-card { background: #ffffff; border-radius: 32px; border: 1px solid #e2e8f0; box-shadow: 0 25px 60px -12px rgba(0,0,0,0.08); }
+    .combo-badge {
+        background: #fffbeb; color: #b45309; border: 1px solid #fde68a;
+        font-weight: 900; padding: 6px 15px; border-radius: 50px; font-size: 0.8rem;
+        opacity: 0; transform: scale(0.8); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .combo-badge.active { opacity: 1; transform: scale(1); }
+    .blitz-option-btn {
+        border-radius: 18px; padding: 20px;
+        font-weight: 900; font-size: 1.4rem;
+        border: 2px solid #f1f5f9; background: #ffffff; transition: all 0.2s;
+    }
+    .blitz-option-btn:hover:not(:disabled) { border-color: #0ea5e9; color: #0ea5e9; background: #f0f9ff; transform: translateY(-3px); }
+
+    .step-label { display: inline-block; background: #0f172a; color: #fff; font-size: 0.7rem; font-weight: 900; padding: 6px 14px; border-radius: 10px; letter-spacing: 1.5px; margin-right: 10px; vertical-align: middle; }
+
+    .perfect-flag { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 900; font-size: 0.75rem; padding: 6px 14px; border-radius: 50px; letter-spacing: 1px; }
+
+    .missing-placeholder { display: inline-block; color: transparent; border-bottom: 2px solid #ef4444; padding: 0 4px; margin: 0 2px; font-weight: 900; user-select: none; line-height: 1.1; }
+
+    .kanji-stack { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; line-height: 1; }
+    .kanji-stack .kanji-top { font-size: 5rem; font-weight: 900; color: #0f172a; letter-spacing: -2px; line-height: 1; }
+    .kanji-stack .kana-bottom { font-size: 2.4rem; font-weight: 700; color: #475569; letter-spacing: 0; line-height: 1.1; }
+    .kanji-stack .kana-bottom .missing-placeholder { font-size: 2.4rem; }
+
+    /* HEADER + INFO BUBBLE */
+    .blitz-header-row { display: inline-flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .blitz-info-btn { width: 44px; height: 44px; border-radius: 50%; background: #ffffff; border: 2px solid #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+    .blitz-info-btn:hover { border-color: #0ea5e9; color: #0ea5e9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15); }
+
+    .back-to-lobby { background: #ffffff; border: 2px solid #e2e8f0; color: #475569; font-weight: 800; font-size: 0.75rem; letter-spacing: 1px; padding: 8px 16px; border-radius: 50px; transition: all 0.2s; }
+    .back-to-lobby:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+
+    /* LOBBY CARD SIZES */
+    .lobby-card-lg { min-height: 200px; height: 200px; padding: 1.5rem 1rem !important; width: 100%; }
+    .lobby-card-lg .alpha-kana-display { font-size: 3.4rem; line-height: 1; height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.6rem; font-weight: 900; white-space: nowrap; }
+    .lobby-card-lg .alpha-label { font-size: 0.95rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 0; text-align: center; }
+    .lobby-card-lg .alpha-sublabel { font-size: 0.72rem; font-weight: 700; opacity: 0.5; margin-top: 6px; text-align: center; }
+
+    .script-hint { display: inline-block; margin-top: 8px; padding: 3px 10px; font-size: 0.62rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; border-radius: 50px; background: #f1f5f9; color: #64748b; }
+    .script-hint.beginner { background: #f0fdf4; color: #15803d; }
+    .script-hint.intermediate { background: #eff6ff; color: #1d4ed8; }
+    .script-hint.advanced { background: #fef2f2; color: #b91c1c; }
+
+    .lobby-card-xl { min-height: 240px; height: 240px; padding: 1.25rem 1rem !important; width: 100%; }
+    .lobby-card-xl .diff-icon-wrap { height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.4rem; }
+    .lobby-card-xl .diff-icon-wrap i { font-size: 2.4rem; line-height: 1; }
+    .lobby-card-xl .alpha-label { font-size: 0.95rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 0; text-align: center; }
+
+    .time-row { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; }
+    .time-row .time-bullet { color: #cbd5e1; font-weight: 900; }
+
+    .reward-mult-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; font-weight: 900; font-size: 0.85rem; color: #0f172a; letter-spacing: 0; }
+    .reward-mult-row .mini-xp { width: 26px; height: 26px; border-radius: 7px; background: #38bdf8; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.62rem; font-weight: 900; box-shadow: 0 2px 0 #0284c7; letter-spacing: 0; }
+    .reward-mult-row .mini-gold { width: 26px; height: 26px; border-radius: 50%; background: #fbbf24; border: 2px solid #d97706; color: #92400e; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 900; box-shadow: 0 2px 0 #b45309; letter-spacing: 0; }
+    .reward-mult-row .reward-amt { font-weight: 900; color: #0f172a; font-size: 0.9rem; }
+    .reward-mult-row .reward-sep { color: #cbd5e1; font-weight: 900; }
+
+    .estimate-note { font-size: 0.7rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; text-align: center; margin: 0 0 1rem 0; }
+    .estimate-note i { color: #f59e0b; margin-right: 4px; }
+
+    /* CTA */
+    .btn-blitz-cta { position: relative; overflow: hidden; background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); border: none; color: #ffffff; transition: all 250ms ease; background-size: 200% 200%; background-position: 0% 50%; }
+    .btn-blitz-cta:hover:not(:disabled) { background-position: 100% 50%; transform: translateY(-2px); box-shadow: 0 14px 30px rgba(37, 99, 235, 0.35); color: #ffffff; }
+    .btn-blitz-cta:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; opacity: 1; }
+    .btn-blitz-cta .cta-arrow { display: inline-block; transition: transform 250ms ease; margin-left: 6px; }
+    .btn-blitz-cta:hover:not(:disabled) .cta-arrow { transform: translateX(6px); }
+
+    /* INFO MODAL PILLARS */
+    .info-pillar { border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; height: 100%; background: #ffffff; transition: all 0.2s; }
+    .info-pillar:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .info-pillar .info-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 10px; }
+    .info-divider { height: 1px; background: #e2e8f0; margin: 18px 0; }
+    .info-row-list { list-style: none; padding-left: 0; margin: 0; }
+    .info-row-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.85rem; color: #475569; font-weight: 600; }
+    .info-row-list li i { color: #f59e0b; font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+
+    /* EXIT MODAL */
+    .exit-confirm-icon { width: 80px; height: 80px; border-radius: 50%; background: #fef2f2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 2.4rem; margin: 0 auto; }
+
+    /* LOCK MODAL */
+    .lock-modal-icon { width: 80px; height: 80px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto; }
+    .lock-req-list { list-style: none; padding: 0; margin: 0; text-align: left; }
+    .lock-req-list li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 8px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.85rem; font-weight: 700; color: #475569; }
+    .lock-req-list li.met { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+    .lock-req-list li .req-icon { width: 22px; height: 22px; border-radius: 50%; background: #cbd5e1; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; }
+    .lock-req-list li.met .req-icon { background: #22c55e; }
+    .lock-req-list li .req-progress { margin-left: auto; font-weight: 900; font-size: 0.78rem; color: #64748b; letter-spacing: 0.5px; }
+    .lock-req-list li.met .req-progress { color: #15803d; }
+
+    /* RESULTS PAGE — balanced */
+    .results-hero {
+        max-width: 640px;
+        margin: 0 auto 2rem auto;
+    }
+    .results-status-icon {
+        width: 96px; height: 96px;
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 2.6rem; margin-bottom: 1rem;
+    }
+    .results-status-icon.win  { background: #ecfdf5; color: #16a34a; box-shadow: 0 8px 24px rgba(34, 197, 94, 0.18); }
+    .results-status-icon.loss { background: #fef2f2; color: #ef4444; box-shadow: 0 8px 24px rgba(239, 68, 68, 0.18); }
+    .results-status-icon.time { background: #fff7ed; color: #f59e0b; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.18); }
+
+    .results-title { font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 900; letter-spacing: -1px; color: #0f172a; margin-bottom: 0.5rem; }
+    .results-subtitle { font-size: 0.95rem; font-weight: 700; color: #64748b; }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        max-width: 640px;
+        margin: 0 auto 1.75rem auto;
+    }
+    @@media (max-width: 540px) { .results-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } }
+    .result-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 18px 12px;
+        text-align: center;
+        transition: all 250ms ease;
+    }
+    .result-stat-card .stat-key {
+        font-size: 0.62rem; font-weight: 900;
+        letter-spacing: 1.5px; color: #94a3b8;
+        text-transform: uppercase; margin-bottom: 6px;
+    }
+    .result-stat-card .stat-val {
+        font-size: 1.6rem; font-weight: 900;
+        color: #0f172a; line-height: 1;
+    }
+    .result-stat-card .stat-val .stat-suffix { font-size: 0.85rem; color: #64748b; margin-left: 2px; }
+
+    .results-rewards-card {
+        max-width: 640px; margin: 0 auto 1.75rem auto;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 1.75rem 1.5rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+    .results-rewards-title {
+        font-size: 0.7rem; font-weight: 900;
+        letter-spacing: 2px; color: #0f172a;
+        text-transform: uppercase;
+        text-align: center; margin-bottom: 1.25rem;
+    }
+    .results-rewards-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .reward-tile {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem 1rem;
+        text-align: center;
+    }
+    .reward-tile .reward-icon-wrap {
+        width: 48px; height: 48px;
+        margin: 0 auto 8px auto;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .reward-tile .reward-icon-xp {
+        width: 48px; height: 48px; border-radius: 12px;
+        background: #38bdf8; color: #ffffff;
+        font-weight: 900; font-size: 1.1rem; letter-spacing: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 0 #0284c7;
+    }
+    .reward-tile .reward-icon-gold {
+        width: 48px; height: 48px; border-radius: 50%;
+        background: #fbbf24; border: 3px solid #d97706; color: #92400e;
+        font-weight: 900; font-size: 1.3rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 0 #b45309;
+    }
+    .reward-tile .reward-amount {
+        font-size: 1.8rem; font-weight: 900;
+        color: #0f172a; line-height: 1;
+    }
+    .reward-tile .reward-label {
+        font-size: 0.62rem; font-weight: 900;
+        letter-spacing: 1.5px; color: #94a3b8;
+        text-transform: uppercase; margin-top: 6px;
+    }
+
+    .results-cta-row {
+        display: flex; gap: 12px; flex-wrap: wrap;
+        justify-content: center; max-width: 640px; margin: 0 auto;
+    }
+    .results-cta-row .btn { min-width: 180px; }
+</style>
+
+<div class="container py-5">
+    <div id="ui-lobby">
+
+        <div class="text-center mb-4 reveal-up">
+            <div class="mb-3">
+                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning-subtle px-3 py-2 fw-black shadow-sm" style="letter-spacing: 1px;">
+                    <i class="bi bi-lightning-charge-fill me-1"></i> HIGH INTENSITY TRAINING
+                </span>
+            </div>
+
+            <div class="blitz-header-row">
+                <h1 class="display-3 fw-black text-dark m-0" style="letter-spacing: -3px;">
+                    Kana<span class="text-warning">Blitz</span>
+                </h1>
+                <button type="button" class="blitz-info-btn shadow-sm"
+                        data-bs-toggle="modal" data-bs-target="#blitzGuideModal"
+                        title="How KanaBlitz works">
+                    <i class="bi bi-info-lg fs-5 fw-black"></i>
+                </button>
+            </div>
+
+            <p class="lead fw-bold text-muted mx-auto mt-3 mb-3" style="max-width: 560px;">
+                Lock in kana fluency through rapid pattern recognition.
+            </p>
+
+            <div class="hero-meta">
+                <span class="meta-chip"><i class="bi bi-lightning-charge-fill"></i> Avg session: 1&ndash;2 mins</span>
+                <span class="meta-dot">&bull;</span>
+                <span class="meta-chip"><i class="bi bi-bullseye"></i> Build streaks</span>
+                <span class="meta-dot">&bull;</span>
+                <span class="meta-chip"><i class="bi bi-lightbulb-fill"></i> Train recall speed</span>
+            </div>
+        </div>
+
+        <div class="row justify-content-center reveal-up">
+            <div class="col-lg-10">
+                <div class="step-progress" id="step-progress">
+                    <span class="step-pill active" id="step-pill-script">
+                        <span class="step-icon"><i class="bi bi-1-circle-fill"></i></span>
+                        <span>Script</span>
+                    </span>
+                    <span class="step-connector" id="step-conn-1"></span>
+                    <span class="step-pill" id="step-pill-intensity">
+                        <span class="step-icon"><i class="bi bi-2-circle-fill"></i></span>
+                        <span>Intensity</span>
+                    </span>
+                    <span class="step-connector" id="step-conn-2"></span>
+                    <span class="step-pill" id="step-pill-start">
+                        <span class="step-icon"><i class="bi bi-play-fill"></i></span>
+                        <span>Start</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center reveal-up delay-100">
+            <div class="col-lg-10">
+
+                <div class="d-flex align-items-center mb-3">
+                    <span class="step-label">STEP 01</span>
+                    <h6 class="fw-black text-muted text-uppercase mb-0" style="letter-spacing: 2px; font-size: 0.75rem;">Choose Your Script</h6>
+                </div>
+
+                <div class="row g-3 mb-5 even-row">
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-lg text-center alpha-select" data-alpha="hiragana" onclick="selectAlpha(this)">
+                            <div class="alpha-kana-display text-primary">あ</div>
+                            <div class="alpha-label">HIRAGANA</div>
+                            <div class="alpha-sublabel">Basic syllabary</div>
+                            <span class="script-hint beginner">Beginner friendly</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-lg text-center alpha-select" data-alpha="katakana" onclick="selectAlpha(this)">
+                            <div class="alpha-kana-display text-danger">ア</div>
+                            <div class="alpha-label">KATAKANA</div>
+                            <div class="alpha-sublabel">Loanwords and foreign</div>
+                            <span class="script-hint beginner">Beginner friendly</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-lg text-center alpha-select" data-alpha="dakuten" onclick="selectAlpha(this)">
+                            <div class="alpha-kana-display"><span style="color: #8b5cf6;">が</span><span style="color:#db2777;">ガ</span></div>
+                            <div class="alpha-label" style="color: #1e293b;">DAKUTEN</div>
+                            <div class="alpha-sublabel">が, ぱ, ゃ, っ, ー</div>
+                            <span class="script-hint intermediate">Intermediate</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-lg text-center alpha-select" data-alpha="mixed" onclick="selectAlpha(this)">
+                            <div class="alpha-kana-display text-dark">あ<span class="text-danger">ア</span></div>
+                            <div class="alpha-label">MIXED BLITZ</div>
+                            <div class="alpha-sublabel">Leaderboard Run</div>
+                            <span class="script-hint advanced">Advanced</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-3">
+                    <span class="step-label">STEP 02</span>
+                    <h6 class="fw-black text-muted text-uppercase mb-0" style="letter-spacing: 2px; font-size: 0.75rem;">Choose Your Intensity</h6>
+                </div>
+
+                <p class="estimate-note">
+                    <i class="bi bi-info-circle-fill"></i>
+                    Higher tiers run on shorter clocks but bank far bigger rewards. Hard and Insanity also bank time on streaks and burn it on mistakes.
+                </p>
+
+                <div class="row g-3 mb-4 even-row">
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-xl text-center diff-select" data-diff="easy" onclick="selectDiff(this)">
+                            <div class="diff-icon-wrap"><i class="bi bi-cup-hot text-success"></i></div>
+                            <div class="alpha-label">EASY</div>
+                            <div class="time-row">
+                                <span>120s</span><span class="time-bullet">&bull;</span><span>Romaji to Kana</span>
+                            </div>
+                            <div class="reward-mult-row">
+                                <span class="mini-xp">XP</span>
+                                <span class="reward-amt">+5</span>
+                                <span class="reward-sep">|</span>
+                                <span class="mini-gold">G</span>
+                                <span class="reward-amt">+2</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-xl text-center diff-select" data-diff="normal" onclick="selectDiff(this)">
+                            <div class="diff-icon-wrap"><i class="bi bi-shield-check text-primary"></i></div>
+                            <div class="alpha-label">NORMAL</div>
+                            <div class="time-row">
+                                <span>90s</span><span class="time-bullet">&bull;</span><span>Basic Words</span>
+                            </div>
+                            <div class="reward-mult-row">
+                                <span class="mini-xp">XP</span>
+                                <span class="reward-amt">+10</span>
+                                <span class="reward-sep">|</span>
+                                <span class="mini-gold">G</span>
+                                <span class="reward-amt">+4</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-xl text-center diff-select" data-diff="hard" data-locked="true" onclick="selectDiff(this)">
+                            <div class="lock-overlay"><i class="bi bi-lock-fill"></i></div>
+                            <div class="diff-icon-wrap"><i class="bi bi-fire" style="color: #a855f7;"></i></div>
+                            <div class="alpha-label">HARD</div>
+                            <div class="time-row">
+                                <span>60s</span><span class="time-bullet">&bull;</span><span>+1s / -2s</span>
+                            </div>
+                            <div class="reward-mult-row">
+                                <span class="mini-xp">XP</span>
+                                <span class="reward-amt">+22</span>
+                                <span class="reward-sep">|</span>
+                                <span class="mini-gold">G</span>
+                                <span class="reward-amt">+9</span>
+                            </div>
+                            <div class="lock-req">90% &amp; 30 words in Normal</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="setup-card lobby-card-xl text-center diff-select" data-diff="insanity" data-locked="true" onclick="selectDiff(this)">
+                            <div class="lock-overlay"><i class="bi bi-lock-fill"></i></div>
+                            <div class="diff-icon-wrap"><i class="bi bi-lightning-fill text-danger"></i></div>
+                            <div class="alpha-label">INSANITY</div>
+                            <div class="time-row">
+                                <span>45s</span><span class="time-bullet">&bull;</span><span>+0.5s / -3s</span>
+                            </div>
+                            <div class="reward-mult-row">
+                                <span class="mini-xp">XP</span>
+                                <span class="reward-amt">+45</span>
+                                <span class="reward-sep">|</span>
+                                <span class="mini-gold">G</span>
+                                <span class="reward-amt">+18</span>
+                            </div>
+                            <div class="lock-req">95% &amp; 25 words in Hard + Lv 15</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-start-blitz" disabled
+                        class="btn btn-lg rounded-pill fw-black w-100 py-3 btn-blitz-cta shadow-lg"
+                        title="Select script and intensity"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        onclick="startArena()">
+                    <i class="bi bi-play-fill fs-4 me-2"></i>
+                    <span id="cta-text">ENTER ARENA</span>
+                    <span class="cta-arrow"><i class="bi bi-arrow-right"></i></span>
+                </button>
+                <p class="text-center text-muted small fw-bold mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Select both a script and an intensity to begin your run.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-game" class="d-none">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <div class="d-flex justify-content-start mb-3">
+                    <button type="button" class="back-to-lobby d-flex align-items-center gap-1 shadow-sm" onclick="exitToLobby()">
+                        <i class="bi bi-arrow-left"></i> EXIT ARENA
+                    </button>
+                </div>
+
+                <div class="hud-panel p-3 mb-4 d-flex justify-content-between align-items-center text-white">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-stopwatch-fill fs-4 text-warning"></i>
+                        <span id="hud-timer" class="fs-4 fw-black font-monospace text-warning">00:00</span>
+                    </div>
+                    <div class="text-center">
+                        <div id="hud-combo-badge" class="combo-badge mb-1">COMBO &times;1.0</div>
+                        <div class="small fw-black text-uppercase opacity-50" style="letter-spacing: 1px;">Score: <span id="hud-score" class="text-white">0</span></div>
+                    </div>
+                    <div id="hud-hp" class="d-flex gap-1">
+                        <i class="bi bi-heart-fill fs-4 heart-icon"></i>
+                        <i class="bi bi-heart-fill fs-4 heart-icon"></i>
+                        <i class="bi bi-heart-fill fs-4 heart-icon"></i>
+                    </div>
+                </div>
+
+                <div class="arena-card p-5 text-center position-relative">
+                    <button class="btn btn-light rounded-circle shadow-sm position-absolute top-0 end-0 m-4" onclick="playCurrentAudio()" style="width: 50px; height: 50px;" title="Replay audio">
+                        <i class="bi bi-volume-up-fill text-primary fs-4"></i>
+                    </button>
+
+                    <div class="py-4">
+                        <p id="game-meaning" class="text-muted fw-black text-uppercase mb-2 small" style="letter-spacing: 2px;"></p>
+                        <h1 id="game-display" class="display-1 fw-black text-dark mb-0" style="letter-spacing: -2px;"></h1>
+                        <p id="game-category" class="text-muted fw-bold small mt-2 mb-0"></p>
+                    </div>
+
+                    <div id="game-options" class="row g-3 mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-results" class="d-none py-5 reveal-up">
+        <div class="results-hero text-center">
+            <div id="result-status-icon" class="results-status-icon win">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+            <h1 id="result-status" class="results-title">Arena Cleared</h1>
+            <p class="results-subtitle">
+                <span id="result-summary-line">You answered targets correctly with strong accuracy.</span>
+            </p>
+            <div id="result-perfect-flag" class="d-none mt-3">
+                <span class="perfect-flag"><i class="bi bi-stars me-1"></i>PERFECT RUN BONUS</span>
+            </div>
+            <div id="result-pb-flag" class="d-none mt-2">
+                <span class="perfect-flag"><i class="bi bi-graph-up-arrow me-1"></i>NEW PERSONAL BEST</span>
+            </div>
+        </div>
+
+        <div class="results-grid">
+            <div class="result-stat-card">
+                <div class="stat-key">Kana Correct</div>
+                <div class="stat-val"><span id="result-count">0</span></div>
+            </div>
+            <div class="result-stat-card">
+                <div class="stat-key">Accuracy</div>
+                <div class="stat-val"><span id="result-accuracy">0</span><span class="stat-suffix">%</span></div>
+            </div>
+            <div class="result-stat-card">
+                <div class="stat-key">Max Combo</div>
+                <div class="stat-val"><span id="result-combo">0</span><span class="stat-suffix">x</span></div>
+            </div>
+        </div>
+
+        <div class="results-rewards-card">
+            <div class="results-rewards-title">Earnings Secured</div>
+
+            <div id="reward-loading" class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-3 fw-bold text-muted mb-0">Securing rewards on the ledger...</p>
+            </div>
+
+            <div id="reward-display" class="d-none">
+                <div class="results-rewards-grid">
+                    <div class="reward-tile">
+                        <div class="reward-icon-wrap"><span class="reward-icon-xp">XP</span></div>
+                        <div class="reward-amount">+<span id="final-exp">0</span></div>
+                        <div class="reward-label">Experience</div>
+                    </div>
+                    <div class="reward-tile">
+                        <div class="reward-icon-wrap"><span class="reward-icon-gold">G</span></div>
+                        <div class="reward-amount">+<span id="final-gold">0</span></div>
+                        <div class="reward-label">Gold</div>
+                    </div>
+                    <div class="reward-tile">
+                        <div class="reward-icon-wrap"><i class="bi bi-trophy-fill" style="font-size: 1.8rem; color: #f59e0b;"></i></div>
+                        <div class="reward-amount"><span id="final-points">0</span></div>
+                        <div class="reward-label">Score</div>
+                    </div>
+                    <div class="reward-tile">
+                        <div class="reward-icon-wrap"><i class="bi bi-stopwatch-fill" style="font-size: 1.8rem; color: #0ea5e9;"></i></div>
+                        <div class="reward-amount"><span id="final-kpm">0</span></div>
+                        <div class="reward-label">Kana / Min</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-leaderboard-card" class="results-rewards-card d-none">
+            <div class="results-rewards-title">
+                Leaderboard &middot; <span id="lb-mode-label">Normal &middot; Hiragana</span>
+            </div>
+            <div class="results-rewards-grid">
+                <div class="reward-tile">
+                    <div class="reward-icon-wrap"><i class="bi bi-flag-fill" style="font-size: 1.8rem; color: #94a3b8;"></i></div>
+                    <div class="reward-amount">#<span id="lb-rank-before">—</span></div>
+                    <div class="reward-label">Previous Rank</div>
+                </div>
+                <div class="reward-tile">
+                    <div class="reward-icon-wrap"><i id="lb-delta-icon" class="bi bi-arrow-up-circle-fill" style="font-size: 1.8rem; color: #16a34a;"></i></div>
+                    <div class="reward-amount">#<span id="lb-rank-after">—</span></div>
+                    <div class="reward-label"><span id="lb-delta-label">Holding Rank</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-cta-row">
+            <button onclick="confirmExitToLobby()" class="btn btn-light btn-lg rounded-pill fw-black px-4 py-3" style="border: 2px solid #e2e8f0;">
+                <i class="bi bi-arrow-repeat me-1"></i> RUN AGAIN
+            </button>
+            <a href="/Leagues#kanablitz-rankings" class="btn btn-light btn-lg rounded-pill fw-black px-4 py-3" style="border: 2px solid #e2e8f0;">
+                <i class="bi bi-bar-chart-fill me-1"></i> LEADERBOARD
+            </a>
+            <button onclick="confirmExitToLobby()" class="btn btn-primary btn-lg rounded-pill fw-black px-4 py-3 btn-cta-premium">
+                <i class="bi bi-house-fill me-1"></i> CONTINUE QUEST
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exitConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+            <div class="modal-body p-5 text-center">
+                <div class="exit-confirm-icon mb-4"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <h4 class="fw-black text-dark mb-2" style="letter-spacing: -0.5px;">Are you sure you want to exit?</h4>
+                <p class="text-muted fw-bold mb-4 mb-0">Progress will be lost</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light fw-black px-4 py-2 rounded-pill" data-bs-dismiss="modal" style="border: 2px solid #e2e8f0;">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger fw-black px-4 py-2 rounded-pill" onclick="confirmExitToLobby()">
+                        <i class="bi bi-box-arrow-left me-1"></i> Exit Arena
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="lockedModeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+            <div class="modal-body p-5 text-center">
+                <div class="lock-modal-icon mb-3"><i class="bi bi-lock-fill"></i></div>
+                <h4 id="lock-modal-title" class="fw-black text-dark mb-1" style="letter-spacing: -0.5px;">Mode Locked</h4>
+                <p id="lock-modal-subtitle" class="text-muted fw-bold mb-4">Meet the requirements to unlock this difficulty.</p>
+                <ul id="lock-modal-list" class="lock-req-list"></ul>
+                <button type="button" class="btn btn-primary fw-black px-4 py-2 rounded-pill mt-3" data-bs-dismiss="modal">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="blitzGuideModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+
+            <div class="bg-warning p-4 text-center position-relative">
+                <div class="position-absolute top-50 start-0 translate-middle-y ps-4 text-dark opacity-25">
+                    <i class="bi bi-lightning-charge-fill display-4"></i>
+                </div>
+                <h4 class="fw-black text-dark m-0 text-uppercase" style="letter-spacing: 2px;">KanaBlitz Field Manual</h4>
+                <p class="text-dark fw-bold small mb-0 mt-1 opacity-75">Everything you need to dominate the arena</p>
+                <button type="button" class="btn-close position-absolute top-50 end-0 translate-middle-y me-4" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4 p-md-5 bg-white">
+
+                <div class="mb-4">
+                    <h5 class="fw-black text-dark text-uppercase mb-2" style="letter-spacing: 1px;">What is KanaBlitz?</h5>
+                    <p class="text-muted fw-bold mb-0" style="font-size: 0.9rem; line-height: 1.6;">
+                        KanaBlitz is a high intensity Japanese reading drill. You will see a word with a single missing kana,
+                        and four candidate kana to choose from. Pick the right one before time runs out, build a streak,
+                        and bank EXP, Gold and Score for every clean answer. The faster and longer your streak, the bigger the rewards.
+                    </p>
+                </div>
+
+                <div class="row g-3 mb-2">
+                    <div class="col-md-4">
+                        <div class="info-pillar">
+                            <div class="info-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-lightning-charge-fill"></i></div>
+                            <h6 class="fw-black text-dark text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Tier &amp; Time</h6>
+                            <p class="text-muted small fw-bold mb-0">Easy 120s &middot; Normal 90s &middot; Hard 60s &middot; Insanity 45s. Higher tier, shorter clock, bigger reward.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-pillar">
+                            <div class="info-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-stopwatch-fill"></i></div>
+                            <h6 class="fw-black text-dark text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Time Banking</h6>
+                            <p class="text-muted small fw-bold mb-0">On Hard and Insanity correct answers add seconds to the clock and mistakes burn them.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-pillar">
+                            <div class="info-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-fire"></i></div>
+                            <h6 class="fw-black text-dark text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Score &amp; Combo</h6>
+                            <p class="text-muted small fw-bold mb-0">Score rewards speed plus streak plus difficulty. Normal mode score is the public leaderboard.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-divider"></div>
+
+                <h6 class="fw-black text-dark text-uppercase mb-3" style="letter-spacing: 1px;">Difficulty Unlocks</h6>
+                <ul class="info-row-list mb-2">
+                    <li><i class="bi bi-unlock-fill"></i><span><strong class="text-dark">Easy &amp; Normal:</strong> Open from day one.</span></li>
+                    <li><i class="bi bi-lock-fill"></i><span><strong class="text-dark">Hard:</strong> 90% best accuracy AND 30+ correct words in a single Normal run on Hiragana, Katakana, Dakuten and Mixed.</span></li>
+                    <li><i class="bi bi-lock-fill"></i><span><strong class="text-dark">Insanity:</strong> 95% AND 25+ correct words in a single Hard run on all four scripts, plus Account Level 15.</span></li>
+                </ul>
+
+                <div class="info-divider"></div>
+
+                <h6 class="fw-black text-dark text-uppercase mb-3" style="letter-spacing: 1px;">Pro Tips</h6>
+                <ul class="info-row-list">
+                    <li><i class="bi bi-lightbulb-fill"></i><span>Play Normal to climb the leaderboard. The 90s clock is fixed for everyone, so the only way up is more correct answers.</span></li>
+                    <li><i class="bi bi-lightbulb-fill"></i><span>On Hard and Insanity protect the streak. One miss costs you both time and your combo multiplier.</span></li>
+                    <li><i class="bi bi-lightbulb-fill"></i><span>Cycle through scripts daily. Mixed Blitz exposes weak letters fast.</span></li>
+                </ul>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // ── CONFIG ──
+    const TIME_LIMITS    = { easy: 120, normal: 90, hard: 60, insanity: 45 };
+    const TIME_BONUS     = { easy: 0,   normal: 0,  hard: 1.0, insanity: 0.5 };
+    const TIME_PENALTY   = { easy: 0,   normal: 0,  hard: 2.0, insanity: 3.0 };
+    const SPEED_WINDOW   = { easy: 10,  normal: 7,  hard: 5,  insanity: 3 };
+    const SCORE_DIFFMULT = { easy: 1.0, normal: 1.5, hard: 2.75, insanity: 4.5 };
+    const TICK_MS        = 100;
+
+    // ── STATE ──
+    let cfgAlpha = null, cfgDiff = null;
+    let pool = [];
+    let arenaDistractors = [];
+    let game = {
+        timer: null, timeLeft: 0,
+        score: 0, mistakes: 0,
+        hp: 3, streak: 0, maxCombo: 0,
+        points: 0,
+        current: null,
+        qStartedAt: 0,
+        runStartedAt: 0
+    };
+
+    let unlocks = {
+        level: 1,
+        hard:     { unlocked: false, threshold: 0.90, correctFloor: 30, progress: { hiragana: 0, katakana: 0, dakuten: 0, mixed: 0 }, progressMax: { hiragana: 0, katakana: 0, dakuten: 0, mixed: 0 } },
+        insanity: { unlocked: false, threshold: 0.95, correctFloor: 25, requiredLevel: 15, levelMet: false, hardCleared: false, progress: { hiragana: 0, katakana: 0, dakuten: 0, mixed: 0 }, progressMax: { hiragana: 0, katakana: 0, dakuten: 0, mixed: 0 } }
+    };
+
+    const ALPHA_LABELS = { hiragana: 'HIRAGANA', katakana: 'KATAKANA', dakuten: 'DAKUTEN', mixed: 'MIXED BLITZ' };
+    const DIFF_LABELS  = { easy: 'EASY', normal: 'NORMAL', hard: 'HARD', insanity: 'INSANITY' };
+
+    // Alphabet-scoped fallback kana so multiple-choice options never leak
+    // kana from other scripts (mixed = all kana).
+    const KANA_BY_ALPHA = {
+        hiragana: ['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん','きょ','しゃ','じゅ','ちょ','りゅ','ぴょ','ひゃ','みょ','にゅ','しゅ','じょ','ちゅ'],
+        katakana: ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン','ニュ','チョ','ジャ','ファ','ピュ','ショ','シャ','ジュ','チュ','キャ','フォ','ティ'],
+        dakuten:  ['が','ぎ','ぐ','げ','ご','ざ','じ','ず','ぜ','ぞ','だ','ぢ','づ','で','ど','ば','び','ぶ','べ','ぼ','ぱ','ぴ','ぷ','ぺ','ぽ','ガ','ギ','グ','ゲ','ゴ','ザ','ジ','ズ','ダ','ド','バ','ビ','ブ','ベ','ボ','パ','ピ','プ','ペ','ポ','ぎゅ','じゅ','びょ','ぎょ','ぴょ']
+    };
+    KANA_BY_ALPHA.mixed = [...KANA_BY_ALPHA.hiragana, ...KANA_BY_ALPHA.katakana, ...KANA_BY_ALPHA.dakuten];
+
+    // ── UNLOCKS ──
+    async function loadUnlocks() {
+        try {
+            const res = await fetch('/KanaBlitz/GetUnlocks');
+            if (!res.ok) return;
+            const data = await res.json();
+            unlocks.level    = data.level ?? 1;
+            unlocks.hard     = data.hard     ?? unlocks.hard;
+            unlocks.insanity = data.insanity ?? unlocks.insanity;
+            applyUnlocksToCards();
+        } catch (e) { console.warn('Unlock fetch failed', e); }
+    }
+
+    function applyUnlocksToCards() {
+        const hardCard = document.querySelector('.diff-select[data-diff="hard"]');
+        const insanityCard = document.querySelector('.diff-select[data-diff="insanity"]');
+
+        if (hardCard) {
+            if (unlocks.hard.unlocked) {
+                hardCard.classList.remove('locked');
+                hardCard.dataset.locked = 'false';
+                const ov = hardCard.querySelector('.lock-overlay'); if (ov) ov.remove();
+                const rq = hardCard.querySelector('.lock-req'); if (rq) rq.remove();
+            } else {
+                hardCard.classList.add('locked');
+                hardCard.dataset.locked = 'true';
+            }
+        }
+
+        if (insanityCard) {
+            if (unlocks.insanity.unlocked) {
+                insanityCard.classList.remove('locked');
+                insanityCard.dataset.locked = 'false';
+                const ov = insanityCard.querySelector('.lock-overlay'); if (ov) ov.remove();
+                const rq = insanityCard.querySelector('.lock-req'); if (rq) rq.remove();
+            } else {
+                insanityCard.classList.add('locked');
+                insanityCard.dataset.locked = 'true';
+            }
+        }
+    }
+
+    function showLockModal(diff) {
+        const titleEl    = document.getElementById('lock-modal-title');
+        const subtitleEl = document.getElementById('lock-modal-subtitle');
+        const listEl     = document.getElementById('lock-modal-list');
+        listEl.innerHTML = '';
+
+        if (diff === 'hard') {
+            const floor   = unlocks.hard.correctFloor ?? 30;
+            const accPct  = Math.round((unlocks.hard.threshold ?? 0.90) * 100);
+            titleEl.textContent = 'Hard Mode Locked';
+            subtitleEl.textContent = `Reach ${accPct}% accuracy AND ${floor}+ correct words in a single Normal run on every script.`;
+
+            const order = ['hiragana', 'katakana', 'dakuten', 'mixed'];
+            order.forEach(a => {
+                const pct = Math.round((unlocks.hard.progress[a] ?? 0) * 100);
+                const max = unlocks.hard.progressMax[a] ?? 0;
+                const accMet = pct >= accPct;
+                const cntMet = max >= floor;
+                const met = accMet && cntMet;
+                const li = document.createElement('li');
+                if (met) li.classList.add('met');
+                li.innerHTML = `
+                    <span class="req-icon"><i class="bi ${met ? 'bi-check-lg' : 'bi-lock-fill'}"></i></span>
+                    <span>Normal &middot; ${ALPHA_LABELS[a]}</span>
+                    <span class="req-progress">${pct}% &middot; ${max}/${floor}</span>`;
+                listEl.appendChild(li);
+            });
+        } else if (diff === 'insanity') {
+            const floor   = unlocks.insanity.correctFloor ?? 25;
+            const accPct  = Math.round((unlocks.insanity.threshold ?? 0.95) * 100);
+            const reqLvl  = unlocks.insanity.requiredLevel ?? 15;
+
+            titleEl.textContent = 'Insanity Mode Locked';
+            subtitleEl.textContent = `Reach ${accPct}% accuracy AND ${floor}+ correct words in a single Hard run on every script, and reach Account Level ${reqLvl}.`;
+
+            const order = ['hiragana', 'katakana', 'dakuten', 'mixed'];
+            order.forEach(a => {
+                const pct = Math.round((unlocks.insanity.progress[a] ?? 0) * 100);
+                const max = unlocks.insanity.progressMax[a] ?? 0;
+                const accMet = pct >= accPct;
+                const cntMet = max >= floor;
+                const met = accMet && cntMet;
+                const li = document.createElement('li');
+                if (met) li.classList.add('met');
+                li.innerHTML = `
+                    <span class="req-icon"><i class="bi ${met ? 'bi-check-lg' : 'bi-lock-fill'}"></i></span>
+                    <span>Hard &middot; ${ALPHA_LABELS[a]}</span>
+                    <span class="req-progress">${pct}% &middot; ${max}/${floor}</span>`;
+                listEl.appendChild(li);
+            });
+
+            const li = document.createElement('li');
+            const met = unlocks.insanity.levelMet;
+            if (met) li.classList.add('met');
+            li.innerHTML = `
+                <span class="req-icon"><i class="bi ${met ? 'bi-check-lg' : 'bi-lock-fill'}"></i></span>
+                <span>Account Level</span>
+                <span class="req-progress">Lv ${unlocks.level} / Lv ${reqLvl}</span>`;
+            listEl.appendChild(li);
+        }
+
+        const modalEl = document.getElementById('lockedModeModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    function generateOptions(correct) {
+        const alpha    = cfgAlpha || 'hiragana';
+        const shuffle  = arr => arr.sort(() => Math.random() - 0.5);
+
+        // 1) prefer real distractors from the server (already alphabet-filtered)
+        const serverPool = (arenaDistractors || []).filter(d => d && d !== correct);
+        // 2) fall back to alphabet-scoped kana if we don't have enough
+        const fallback   = (KANA_BY_ALPHA[alpha] || KANA_BY_ALPHA.hiragana).filter(d => d !== correct);
+
+        const choices = [correct];
+        shuffle(serverPool);
+        while (choices.length < 4 && serverPool.length) {
+            const c = serverPool.shift();
+            if (!choices.includes(c)) choices.push(c);
+        }
+        shuffle(fallback);
+        while (choices.length < 4 && fallback.length) {
+            const c = fallback.shift();
+            if (!choices.includes(c)) choices.push(c);
+        }
+        return shuffle(choices);
+    }
+
+    // ── LOBBY ──
+    function selectAlpha(el) {
+        document.querySelectorAll('.alpha-select').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        cfgAlpha = el.dataset.alpha;
+        checkReady();
+    }
+
+    function selectDiff(el) {
+        const diff = el.dataset.diff;
+        const isLocked = el.dataset.locked === 'true';
+
+        if (isLocked) { showLockModal(diff); return; }
+
+        document.querySelectorAll('.diff-select').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        cfgDiff = diff;
+        checkReady();
+    }
+
+    function checkReady() {
+        const btn = document.getElementById('btn-start-blitz');
+        const ready = !!(cfgAlpha && cfgDiff);
+        btn.disabled = !ready;
+
+        const pillScript    = document.getElementById('step-pill-script');
+        const pillIntensity = document.getElementById('step-pill-intensity');
+        const pillStart     = document.getElementById('step-pill-start');
+        const conn1 = document.getElementById('step-conn-1');
+        const conn2 = document.getElementById('step-conn-2');
+
+        [pillScript, pillIntensity, pillStart].forEach(p => p.classList.remove('active', 'done'));
+        conn1.classList.remove('done'); conn2.classList.remove('done');
+
+        if (cfgAlpha) { pillScript.classList.add('done'); conn1.classList.add('done'); }
+        else { pillScript.classList.add('active'); }
+
+        if (cfgDiff) { pillIntensity.classList.add('done'); conn2.classList.add('done'); }
+        else if (cfgAlpha) { pillIntensity.classList.add('active'); }
+
+        if (ready) { pillStart.classList.add('active'); }
+
+        const ctaText = document.getElementById('cta-text');
+        if (ready) {
+            ctaText.textContent = `ENTER ARENA \u2022 ${ALPHA_LABELS[cfgAlpha]} \u2022 ${DIFF_LABELS[cfgDiff]}`;
+            btn.setAttribute('title', 'Begin your run');
+        } else {
+            ctaText.textContent = 'ENTER ARENA';
+            btn.setAttribute('title', 'Select script and intensity');
+        }
+
+        if (window.bootstrap && bootstrap.Tooltip) {
+            const inst = bootstrap.Tooltip.getInstance(btn);
+            if (inst) { inst.dispose(); }
+            new bootstrap.Tooltip(btn);
+        }
+    }
+
+    // ── EXIT ──
+    function exitToLobby() {
+        const modalEl = document.getElementById('exitConfirmModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    function confirmExitToLobby() {
+        const exitModal = bootstrap.Modal.getInstance(document.getElementById('exitConfirmModal'));
+        if (exitModal) exitModal.hide();
+
+        clearInterval(game.timer);
+        game = { timer: null, timeLeft: 0, score: 0, mistakes: 0, hp: 3, streak: 0, maxCombo: 0, points: 0, current: null, qStartedAt: 0, runStartedAt: 0 };
+        pool = [];
+        document.getElementById('ui-game').classList.add('d-none');
+        document.getElementById('ui-results').classList.add('d-none');
+        document.getElementById('ui-lobby').classList.remove('d-none');
+
+        document.querySelectorAll('.heart-icon').forEach(h => h.classList.remove('heart-lost'));
+        document.getElementById('hud-score').innerText = '0';
+        document.getElementById('hud-combo-badge').classList.remove('active');
+        const timerEl = document.getElementById('hud-timer');
+        timerEl.classList.remove('text-danger');
+        timerEl.classList.add('text-warning');
+
+        document.getElementById('reward-loading').classList.remove('d-none');
+        document.getElementById('reward-display').classList.add('d-none');
+        document.getElementById('result-perfect-flag').classList.add('d-none');
+        document.getElementById('result-pb-flag').classList.add('d-none');
+        document.getElementById('result-leaderboard-card').classList.add('d-none');
+
+        const btn = document.getElementById('btn-start-blitz');
+        const inner = `<i class="bi bi-play-fill fs-4 me-2"></i><span id="cta-text">ENTER ARENA</span><span class="cta-arrow"><i class="bi bi-arrow-right"></i></span>`;
+        btn.innerHTML = inner;
+        btn.disabled = !(cfgAlpha && cfgDiff);
+
+        loadUnlocks();
+        checkReady();
+    }
+
+    // ── ENGINE ──
+    async function startArena() {
+        const btn = document.getElementById('btn-start-blitz');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>SYNCING ARENA...`;
+
+        try {
+            const res = await fetch(`/KanaBlitz/GetArenaPayload?alphabet=${cfgAlpha}&difficulty=${cfgDiff}`);
+            if (res.status === 403) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || 'This mode is locked.');
+                location.reload();
+                return;
+            }
+            const data = await res.json();
+
+            pool = Array.isArray(data) ? data : (data.words || []);
+            arenaDistractors = data.distractors || [];
+
+            if (!pool || pool.length === 0) {
+                alert("No words found for this configuration.");
+                location.reload();
+                return;
+            }
+
+            document.getElementById('ui-lobby').classList.add('d-none');
+            document.getElementById('ui-game').classList.remove('d-none');
+
+            game.score    = 0;
+            game.mistakes = 0;
+            game.hp       = 3;
+            game.streak   = 0;
+            game.maxCombo = 0;
+            game.points   = 0;
+            game.timeLeft = TIME_LIMITS[cfgDiff] ?? 90;
+            game.runStartedAt = performance.now();
+
+            updateTimerUI();
+            game.timer = setInterval(tick, TICK_MS);
+
+            nextTarget();
+        } catch (e) {
+            console.error("Fetch failed:", e);
+            location.reload();
+        }
+    }
+
+    function tick() {
+        game.timeLeft -= (TICK_MS / 1000);
+        if (game.timeLeft <= 0) {
+            game.timeLeft = 0;
+            updateTimerUI();
+            finish("Time Expired");
+            return;
+        }
+        updateTimerUI();
+    }
+
+    function updateTimerUI() {
+        const t = Math.max(0, Math.ceil(game.timeLeft));
+        const m = Math.floor(t / 60).toString().padStart(2, '0');
+        const s = (t % 60).toString().padStart(2, '0');
+        const el = document.getElementById('hud-timer');
+        el.innerText = `${m}:${s}`;
+        if (game.timeLeft <= 10) {
+            el.classList.remove('text-warning'); el.classList.add('text-danger');
+        } else {
+            el.classList.remove('text-danger'); el.classList.add('text-warning');
+        }
+    }
+
+    function nextTarget() {
+        if (pool.length === 0) return finish("Victory!");
+
+        const q = pool.shift();
+        game.current = q;
+        game.qStartedAt = performance.now();
+
+        document.getElementById('game-meaning').innerText = cfgDiff === 'easy' ? 'PICK THE KANA' : (q.meaning || '');
+        document.getElementById('game-display').innerHTML = q.display;
+        document.getElementById('game-category').innerText = q.category ? `Category: ${q.category}` : '';
+
+        const correct = q.missing;
+        const options = generateOptions(correct);
+
+        const container = document.getElementById('game-options');
+        container.innerHTML = '';
+        options.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'col-6 col-md-3';
+            div.innerHTML = `<button class="btn blitz-option-btn w-100 shadow-sm" onclick="handleInput('${opt}', this)">${opt}</button>`;
+            container.appendChild(div);
+        });
+
+        playCurrentAudio();
+    }
+
+    function handleInput(val, btn) {
+        const correct = game.current.missing;
+        const elapsed = (performance.now() - game.qStartedAt) / 1000;
+
+        if (val === correct) {
+            const window = SPEED_WINDOW[cfgDiff] ?? 7;
+            const speedFactor = Math.max(0, (window - elapsed) / window);
+            const base       = 100;
+            const speedBonus = Math.round(speedFactor * 80);
+            const comboBonus = Math.min(game.streak, 30) * 8;
+            const diffMult   = SCORE_DIFFMULT[cfgDiff] ?? 1.5;
+            const earned     = Math.round((base + speedBonus + comboBonus) * diffMult);
+
+            game.points += earned;
+            game.score++;
+            game.streak++;
+            if (game.streak > game.maxCombo) game.maxCombo = game.streak;
+
+            const bonus = TIME_BONUS[cfgDiff] ?? 0;
+            if (bonus > 0) game.timeLeft = Math.min(TIME_LIMITS[cfgDiff] + 30, game.timeLeft + bonus);
+
+            btn.classList.add('bg-success', 'text-white', 'border-success');
+            updateHUD();
+            setTimeout(nextTarget, 150);
+        } else {
+            game.mistakes++;
+            game.streak = 0;
+            game.hp--;
+
+            const penalty = TIME_PENALTY[cfgDiff] ?? 0;
+            if (penalty > 0) {
+                game.timeLeft = Math.max(0, game.timeLeft - penalty);
+                if (game.timeLeft <= 0) {
+                    btn.classList.add('bg-danger', 'text-white', 'border-danger');
+                    updateHUD();
+                    return finish("Time Expired");
+                }
+            }
+
+            btn.classList.add('bg-danger', 'text-white', 'border-danger');
+            updateHUD();
+
+            if (game.hp <= 0) finish("Arena Defeat");
+            else setTimeout(nextTarget, 600);
+        }
+    }
+
+    function updateHUD() {
+        document.getElementById('hud-score').innerText = game.points.toLocaleString();
+
+        const hearts = document.querySelectorAll('.heart-icon');
+        hearts.forEach((h, i) => {
+            if (i >= game.hp) h.classList.add('heart-lost');
+            else h.classList.remove('heart-lost');
+        });
+
+        const combo = document.getElementById('hud-combo-badge');
+        if (game.streak >= 3) {
+            const multiplier = (1.0 + (game.streak * 0.05)).toFixed(2);
+            combo.innerText = `COMBO \u00d7${multiplier}`;
+            combo.classList.add('active');
+        } else {
+            combo.classList.remove('active');
+        }
+    }
+
+    function playCurrentAudio() {
+        if (!game.current) return;
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = (game.current.kana || '').split('(')[0].trim();
+        msg.lang = 'ja-JP';
+        window.speechSynthesis.speak(msg);
+    }
+
+    // ── FINISH ──
+    async function finish(status) {
+        clearInterval(game.timer);
+        document.getElementById('ui-game').classList.add('d-none');
+        document.getElementById('ui-results').classList.remove('d-none');
+
+        const iconWrap  = document.getElementById('result-status-icon');
+        iconWrap.classList.remove('win', 'loss', 'time');
+        const titleEl   = document.getElementById('result-status');
+        const summaryEl = document.getElementById('result-summary-line');
+
+        if (status === 'Arena Defeat') {
+            iconWrap.classList.add('loss');
+            iconWrap.innerHTML = '<i class="bi bi-shield-slash-fill"></i>';
+            titleEl.textContent = 'Arena Defeat';
+            summaryEl.textContent = 'You ran out of lives. Reload, refocus, regroup.';
+        } else if (status === 'Time Expired') {
+            iconWrap.classList.add('time');
+            iconWrap.innerHTML = '<i class="bi bi-stopwatch-fill"></i>';
+            titleEl.textContent = 'Time Expired';
+            summaryEl.textContent = 'The clock won this round. Push the tempo next run.';
+        } else {
+            iconWrap.classList.add('win');
+            iconWrap.innerHTML = '<i class="bi bi-trophy-fill"></i>';
+            titleEl.textContent = 'Arena Cleared';
+            summaryEl.textContent = 'Clean run. Bank the rewards and queue the next set.';
+        }
+
+        document.getElementById('result-count').innerText = game.score;
+        document.getElementById('result-combo').innerText = game.maxCombo || 0;
+
+        const durationSec = Math.max(1, Math.round((performance.now() - game.runStartedAt) / 1000));
+        const kpm = Math.round((game.score / durationSec) * 60);
+
+        try {
+            const res = await fetch('/KanaBlitz/SubmitScore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    Alphabet: cfgAlpha,
+                    Difficulty: cfgDiff,
+                    CorrectAnswers: game.score,
+                    Mistakes: game.mistakes,
+                    MaxCombo: game.maxCombo,
+                    Points: game.points,
+                    DurationSeconds: durationSec
+                })
+            });
+            const data = await res.json();
+
+            document.getElementById('reward-loading').classList.add('d-none');
+            document.getElementById('reward-display').classList.remove('d-none');
+
+            document.getElementById('final-exp').innerText    = data.exp ?? 0;
+            document.getElementById('final-gold').innerText   = data.gold ?? 0;
+            document.getElementById('final-points').innerText = (data.points ?? game.points).toLocaleString();
+            document.getElementById('final-kpm').innerText    = kpm;
+            document.getElementById('result-accuracy').innerText = data.accuracy ?? 0;
+
+            if (data.perfectBonus) document.getElementById('result-perfect-flag').classList.remove('d-none');
+            else document.getElementById('result-perfect-flag').classList.add('d-none');
+
+            if (data.isNewPB) document.getElementById('result-pb-flag').classList.remove('d-none');
+            else document.getElementById('result-pb-flag').classList.add('d-none');
+
+            const lbCard = document.getElementById('result-leaderboard-card');
+            if (cfgDiff === 'normal' && (data.rankAfter ?? 0) > 0) {
+                lbCard.classList.remove('d-none');
+                document.getElementById('lb-mode-label').textContent =
+                    `Normal \u00b7 ${ALPHA_LABELS[cfgAlpha] || cfgAlpha.toUpperCase()}`;
+                document.getElementById('lb-rank-before').innerText = data.rankBefore ?? '—';
+                document.getElementById('lb-rank-after').innerText  = data.rankAfter ?? '—';
+
+                const delta = data.rankDelta ?? 0;
+                const icon  = document.getElementById('lb-delta-icon');
+                const lbl   = document.getElementById('lb-delta-label');
+                if (delta > 0) {
+                    icon.className = 'bi bi-arrow-up-circle-fill';
+                    icon.style.color = '#16a34a';
+                    lbl.textContent  = `Up ${delta} place${delta === 1 ? '' : 's'}`;
+                } else if (delta < 0) {
+                    icon.className = 'bi bi-arrow-down-circle-fill';
+                    icon.style.color = '#ef4444';
+                    lbl.textContent  = `Down ${Math.abs(delta)} place${Math.abs(delta) === 1 ? '' : 's'}`;
+                } else {
+                    icon.className = 'bi bi-dash-circle-fill';
+                    icon.style.color = '#94a3b8';
+                    lbl.textContent  = 'Holding rank';
+                }
+            } else {
+                lbCard.classList.add('d-none');
+            }
+        } catch (e) {
+            document.getElementById('reward-loading').innerText = "Failed to sync rewards.";
+        }
+    }
+
+    // ── BOOT ──
+    document.addEventListener('DOMContentLoaded', () => {
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('active'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal-up').forEach(el => obs.observe(el));
+
+        if (window.bootstrap && bootstrap.Tooltip) {
+            const ctaBtn = document.getElementById('btn-start-blitz');
+            new bootstrap.Tooltip(ctaBtn);
+        }
+
+        loadUnlocks();
+        checkReady();
+    });
+</script>
+}

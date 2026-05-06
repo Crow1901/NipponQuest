@@ -1,0 +1,77 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using NipponQuest.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+<ul class="navbar-nav d-flex flex-row align-items-center gap-3">
+    @if (SignInManager.IsSignedIn(User))
+    {
+        var player = await UserManager.GetUserAsync(User);
+        var currentRankClass = player?.CurrentLeague.ToString().ToLower() ?? "sprout";
+        bool hasActiveStreak = player.LoginStreak > 0;
+
+        <li class="nav-item">
+            <div class="hud-bubble">
+                <div class="d-flex align-items-center gap-3 pe-3 border-end border-secondary border-opacity-10">
+                    <div class="d-flex align-items-center gap-1">
+                        <i class="bi bi-fire fs-5 @(hasActiveStreak ? "streak-flame-active" : "streak-frozen")"></i>
+                        <span class="fw-black @(hasActiveStreak ? "streak-flame-active" : "streak-frozen")" style="font-size: 0.95rem;">@player.LoginStreak</span>
+                    </div>
+
+                    <a asp-controller="Leagues" asp-action="Index" class="text-decoration-none">
+                        <span class="rank-text @currentRankClass">@player?.CurrentLeague</span>
+                    </a>
+
+                    <div class="level-label-sync" style="font-size: 0.85rem; min-width: 45px;">
+                        LV.@player.Level
+                    </div>
+
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="fw-black text-dark" style="font-size: 0.85rem;">@player.Gold</span>
+                        <div class="gold-coin"></div>
+                    </div>
+                </div>
+
+                <div class="ms-3" style="width: 140px;">
+                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.65rem;">
+                        <span class="fw-black text-muted">EXP</span>
+                        <span class="text-muted fw-bold">@player.XPPercentage%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; background: rgba(0,0,0,0.06); border-radius: 10px;">
+                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" style="width: @player.XPPercentage%"></div>
+                    </div>
+                </div>
+            </div>
+        </li>
+
+        <li class="nav-item">
+            <div class="hud-bubble px-4">
+                <span class="fw-bold text-muted small">WELCOME, </span>
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="fw-black text-primary text-decoration-none text-uppercase small ms-1">@player.GamerTag</a>
+            </div>
+        </li>
+
+        <li class="nav-item">
+            <form class="form-inline logout-btn" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                <button type="submit" class="logout-btn-wrapper border-0 px-4 shadow-sm">
+                    <span class="logout-text small">LOGOUT</span>
+                </button>
+            </form>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="hud-bubble text-decoration-none px-4" asp-area="Identity" asp-page="/Account/Login">
+                <span class="fw-black text-primary small">LOGIN</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="hud-bubble text-decoration-none shadow-sm px-4 border-0 d-flex align-items-center justify-content-center"
+                   style="background-color: #0d6efd !important; min-height: 40px;"
+                   asp-area="Identity" asp-page="/Account/Register">
+                <span class="fw-black small" style="color: #ffffff !important;">REGISTER</span>
+            </a>
+        </li>
+    }
+</ul>

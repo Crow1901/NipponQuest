@@ -1,0 +1,1055 @@
+﻿@model NipponQuest.Models.LeagueDashboardViewModel
+@{
+    ViewData["Title"] = "Leagues";
+    var player = Model.CurrentUser;
+    int totalUsers = Model.TotalUserCount;
+    var leagueKey = player.CurrentLeague.ToString().ToLower();
+    int totalRivals = Model.ArenaRivals.Count;
+    int promoteLimit = System.Math.Max(1, (int)System.Math.Ceiling(totalRivals * 0.2));
+    int demoteLimit = totalRivals - (int)System.Math.Floor(totalRivals * 0.2);
+}
+
+<style>
+    /* ──────────────────────────────────────────────────────
+       LEAGUES PAGE — Polished Premium Layout
+       ────────────────────────────────────────────────────── */
+
+    .lg-reveal { opacity: 0; transform: translateY(24px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+    .lg-reveal.active { opacity: 1; transform: translateY(0); }
+
+    /* HERO */
+    .lg-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0ea5e9 160%);
+        border-radius: 32px;
+        color: #ffffff;
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.4);
+    }
+    .lg-hero::before {
+        content: "";
+        position: absolute;
+        inset: -50% -10% auto auto;
+        width: 420px; height: 420px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .lg-hero::after {
+        content: "リーグ";
+        position: absolute;
+        right: 28px; bottom: -28px;
+        font-size: 9rem;
+        font-weight: 900;
+        color: rgba(255,255,255,0.04);
+        line-height: 1;
+        letter-spacing: -8px;
+        pointer-events: none;
+    }
+    .lg-hero-meta {
+        font-size: 0.7rem; font-weight: 900;
+        letter-spacing: 2px;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+    }
+    .lg-hero h1.lg-title {
+        font-size: clamp(2.4rem, 5vw, 3.8rem);
+        font-weight: 900; letter-spacing: -2px; line-height: 1;
+        margin: 6px 0 2px;
+    }
+    .lg-current-rank {
+        font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+        font-weight: 900; letter-spacing: 1px; text-transform: uppercase;
+        line-height: 1; display: inline-block; margin-top: 6px;
+    }
+    .lg-hero-stat { display: flex; flex-direction: column; gap: 4px; }
+    .lg-hero-stat .v { font-size: 1.6rem; font-weight: 900; line-height: 1; letter-spacing: -0.5px; }
+    .lg-hero-stat .l { font-size: 0.6rem; font-weight: 900; letter-spacing: 2px; color: rgba(255,255,255,0.55); text-transform: uppercase; }
+
+    .lg-info-btn {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        border: 2px solid rgba(255,255,255,0.25);
+        color: #ffffff;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: all 200ms ease;
+    }
+    .lg-info-btn:hover { background: rgba(251, 191, 36, 0.95); color: #422006; border-color: #fbbf24; transform: translateY(-2px); }
+
+    .lg-countdown-pill {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(251, 191, 36, 0.95);
+        color: #422006;
+        font-weight: 900; font-size: 0.75rem;
+        letter-spacing: 1.2px; text-transform: uppercase;
+        padding: 10px 18px; border-radius: 50px;
+        box-shadow: 0 8px 20px -6px rgba(251, 191, 36, 0.5);
+    }
+
+    /* PANELS */
+    .lg-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 1.75rem;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        transition: all 250ms ease;
+    }
+    .lg-panel:hover { box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08); }
+    .lg-panel-title {
+        font-size: 0.7rem; font-weight: 900;
+        letter-spacing: 2px; color: #0f172a;
+        text-transform: uppercase; margin-bottom: 0.25rem;
+    }
+    .lg-panel-sub { font-size: 0.75rem; color: #64748b; font-weight: 700; }
+
+    /* PANEL HEADER ICONS */
+    .lg-head-icon-xp {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: #38bdf8; color: #ffffff;
+        font-weight: 900; font-size: 0.78rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 3px 0 #0284c7;
+        flex-shrink: 0;
+    }
+    .lg-head-icon-gold-wrap {
+        width: 38px; height: 38px;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .lg-head-icon-gold-wrap .gold-coin {
+        width: 32px; height: 32px;
+        font-size: 0.95rem;
+    }
+
+    /* TIER LADDER */
+    .lg-tier-ladder { display: flex; flex-direction: column; gap: 10px; }
+    .lg-tier-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        transition: all 200ms ease;
+    }
+    .lg-tier-row:hover { transform: translateX(4px); border-color: #cbd5e1; }
+    .lg-tier-row.is-current {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border-color: #fbbf24;
+        box-shadow: 0 6px 16px rgba(251, 191, 36, 0.2);
+    }
+
+    .lg-rank-line { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .lg-here-tag {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #0f172a;
+        color: #fbbf24;
+        font-size: 0.5rem; font-weight: 900;
+        letter-spacing: 1.2px; text-transform: uppercase;
+        padding: 4px 9px; border-radius: 50px;
+        white-space: nowrap;
+        line-height: 1;
+    }
+    .lg-tier-info { min-width: 0; }
+    .lg-tier-info .jp-name {
+        font-size: 0.75rem; font-weight: 800; color: #475569;
+        line-height: 1.2; margin-top: 6px;
+    }
+    .lg-tier-info .romaji {
+        font-size: 0.55rem; font-weight: 900; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px;
+    }
+    .lg-tier-reward {
+        display: flex; flex-direction: column;
+        align-items: flex-end; gap: 4px; flex-shrink: 0;
+    }
+    .lg-tier-reward .amt {
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 900; color: #0f172a; font-size: 1.05rem;
+    }
+    .lg-tier-reward .lbl {
+        font-size: 0.55rem; font-weight: 900; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 1.5px;
+    }
+
+    /* MODAL TIER LADDER */
+    .modal-body .lg-tier-ladder { gap: 8px; }
+    .modal-body .lg-tier-row { padding: 12px 14px; border-radius: 14px; }
+    .modal-body .lg-tier-row:hover { transform: none; }
+    .modal-body .lg-tier-info .jp-name { font-size: 0.72rem; margin-top: 4px; }
+    .modal-body .lg-tier-info .romaji { font-size: 0.52rem; }
+    .modal-body .lg-tier-reward .amt { font-size: 0.95rem; }
+
+    /* ARENA CARD */
+    .lg-arena-card { position: relative; overflow: hidden; }
+    .lg-arena-rank-display {
+        text-align: center;
+        padding: 1.5rem 1rem 1.25rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1.25rem;
+    }
+    .lg-arena-rank-display .lbl {
+        font-size: 0.6rem; font-weight: 900;
+        letter-spacing: 2.5px; color: #94a3b8; text-transform: uppercase;
+    }
+    .lg-arena-rank-display .num {
+        font-size: clamp(3.6rem, 8vw, 5.2rem);
+        font-weight: 900; line-height: 0.9; letter-spacing: -5px;
+        color: #0f172a; margin: 0.4rem 0;
+    }
+    .lg-arena-movement {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 0.7rem; font-weight: 900;
+        letter-spacing: 1.2px; text-transform: uppercase;
+        padding: 6px 14px; border-radius: 50px;
+    }
+    .lg-arena-movement.up { background: #dcfce7; color: #15803d; }
+    .lg-arena-movement.down { background: #fee2e2; color: #b91c1c; }
+    .lg-arena-movement.flat { background: #f1f5f9; color: #64748b; }
+
+    .lg-zone-key {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+        margin-bottom: 1rem;
+    }
+    .lg-zone-key .zk {
+        text-align: center; padding: 8px 6px; border-radius: 10px;
+        font-size: 0.55rem; font-weight: 900;
+        letter-spacing: 1px; text-transform: uppercase;
+    }
+    .lg-zone-key .zk.promo { background: #dcfce7; color: #15803d; }
+    .lg-zone-key .zk.safe  { background: #f1f5f9; color: #64748b; }
+    .lg-zone-key .zk.demo  { background: #fee2e2; color: #b91c1c; }
+
+    .lg-rival-list {
+        display: flex; flex-direction: column; gap: 6px;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 6px;
+    }
+    .lg-rival-list::-webkit-scrollbar { width: 6px; }
+    .lg-rival-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .lg-rival {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 14px;
+        background: #f8fafc;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        transition: all 200ms ease;
+    }
+    .lg-rival:hover { transform: translateX(4px); }
+    .lg-rival.zone-promote { background: linear-gradient(90deg, #f0fdf4, #ffffff); border-left: 3px solid #22c55e; }
+    .lg-rival.zone-demote  { background: linear-gradient(90deg, #fef2f2, #ffffff); border-left: 3px solid #ef4444; }
+    .lg-rival.is-self {
+        background: linear-gradient(90deg, #eff6ff, #ffffff);
+        border: 1px solid #3b82f6;
+        box-shadow: 0 8px 20px -8px rgba(59, 130, 246, 0.4);
+    }
+    .lg-rival .rk {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 38px; height: 38px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        font-weight: 900; color: #475569; font-size: 0.85rem;
+    }
+    .lg-rival.is-self .rk { background: #3b82f6; color: #ffffff; border-color: #3b82f6; }
+    .lg-rival .nm { font-weight: 900; color: #0f172a; font-size: 0.9rem; }
+    .lg-rival .you-tag {
+        background: #3b82f6; color: #ffffff;
+        font-size: 0.55rem; font-weight: 900; letter-spacing: 1px;
+        padding: 2px 8px; border-radius: 50px; margin-left: 6px;
+    }
+    .lg-rival .xp { margin-left: auto; font-weight: 900; color: #0f172a; font-size: 0.95rem; }
+    .lg-rival .xp small {
+        font-size: 0.6rem; color: #94a3b8;
+        font-weight: 800; letter-spacing: 1px; margin-left: 4px;
+    }
+    .lg-rival .zone-tag {
+        font-size: 0.5rem; font-weight: 900;
+        letter-spacing: 1px; text-transform: uppercase;
+        padding: 3px 7px; border-radius: 50px;
+    }
+    .lg-rival .zone-tag.promo { background: #22c55e; color: #ffffff; }
+    .lg-rival .zone-tag.demo  { background: #ef4444; color: #ffffff; }
+
+    /* PODIUM (TOP 3) */
+    .lg-podium-list { display: flex; flex-direction: column; gap: 8px; }
+    .lg-podium-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        transition: all 200ms ease;
+        min-width: 0;
+    }
+    .lg-podium-row:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06); }
+    .lg-podium-row.is-self { background: linear-gradient(90deg, #eff6ff, #ffffff); border-color: #3b82f6; }
+    .lg-podium-row.rank-1 {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border-color: #fbbf24;
+    }
+    .lg-podium-medal {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 1rem; flex-shrink: 0;
+        border: 2px solid;
+    }
+    .lg-podium-medal.r1 { background: linear-gradient(135deg, #fde68a, #f59e0b); border-color: #b45309; color: #422006; }
+    .lg-podium-medal.r2 { background: linear-gradient(135deg, #f1f5f9, #cbd5e1); border-color: #64748b; color: #1e293b; }
+    .lg-podium-medal.r3 { background: linear-gradient(135deg, #fed7aa, #c2410c); border-color: #7c2d12; color: #ffffff; }
+    .lg-podium-info { min-width: 0; overflow: hidden; }
+    .lg-podium-name {
+        font-weight: 900; color: #0f172a; font-size: 0.9rem; line-height: 1.1;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lg-podium-sub {
+        font-size: 0.6rem; font-weight: 800; color: #94a3b8;
+        letter-spacing: 1px; text-transform: uppercase; margin-top: 2px;
+    }
+    .lg-podium-value {
+        font-weight: 900; color: #0f172a;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* INFO CARD */
+    .lg-info-card {
+        background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);
+        color: #ffffff; border-radius: 24px;
+        padding: 1.75rem;
+        position: relative; overflow: hidden;
+        box-shadow: 0 12px 30px -10px rgba(14, 165, 233, 0.4);
+    }
+    .lg-info-card::before {
+        content: "";
+        position: absolute; inset: -30% -10% auto auto;
+        width: 220px; height: 220px;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .lg-info-card .info-eyebrow {
+        font-size: 0.6rem; font-weight: 900;
+        letter-spacing: 2px; text-transform: uppercase;
+        color: rgba(255,255,255,0.7);
+    }
+    .lg-info-card .info-headline {
+        font-size: 1.3rem; font-weight: 900; line-height: 1.15;
+        margin-top: 6px; letter-spacing: -0.5px;
+    }
+    .lg-info-card .info-body {
+        font-size: 0.85rem; font-weight: 700;
+        opacity: 0.85; line-height: 1.5; margin-top: 8px;
+    }
+
+    /* CTA BUTTON */
+    .lg-cta-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        width: 100%;
+        padding: 16px 22px;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #1e3a8a, #0ea5e9);
+        color: #ffffff !important;
+        font-weight: 900;
+        font-size: 0.85rem;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        border: none;
+        text-decoration: none;
+        box-shadow: 0 12px 30px -10px rgba(14, 165, 233, 0.5);
+        transition: all 250ms ease;
+    }
+    .lg-cta-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 36px -10px rgba(14, 165, 233, 0.6);
+        filter: brightness(1.08);
+        color: #ffffff !important;
+    }
+
+    /* INFO MODAL PILLARS */
+    .info-pillar { border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; height: 100%; background: #ffffff; transition: all 0.2s; }
+    .info-pillar:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .info-pillar .info-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 10px; }
+    .info-divider { height: 1px; background: #e2e8f0; margin: 18px 0; }
+    .info-row-list { list-style: none; padding-left: 0; margin: 0; }
+    .info-row-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.85rem; color: #475569; font-weight: 600; }
+    .info-row-list li i { color: #f59e0b; font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+
+    /* EARN-XP MODAL CHOICE TILES */
+    .earn-choice {
+        display: flex; align-items: center; gap: 16px;
+        padding: 1.25rem 1.5rem;
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 20px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 200ms ease;
+        width: 100%;
+    }
+    .earn-choice:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 30px rgba(14, 165, 233, 0.18);
+        border-color: #0ea5e9;
+        color: inherit;
+    }
+    .earn-choice .ec-icon {
+        width: 56px; height: 56px; border-radius: 16px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.6rem; flex-shrink: 0;
+    }
+    .earn-choice.blitz .ec-icon { background: #fffbeb; color: #b45309; }
+    .earn-choice.cards .ec-icon { background: #eff6ff; color: #1d4ed8; }
+    .earn-choice .ec-title { font-weight: 900; font-size: 1rem; color: #0f172a; letter-spacing: -0.3px; }
+    .earn-choice .ec-sub   { font-size: 0.75rem; font-weight: 700; color: #64748b; margin-top: 2px; }
+    .earn-choice .ec-arrow { margin-left: auto; color: #94a3b8; font-size: 1.2rem; transition: transform 200ms ease; }
+    .earn-choice:hover .ec-arrow { transform: translateX(6px); color: #0ea5e9; }
+
+    /* ── KANABLITZ LEADERBOARD TAB BUTTONS (mode-based with difficulty accents) ── */
+    .lb-tab-btn { border: 2px solid #e2e8f0 !important; color: #64748b; transition: all 0.2s; }
+    .lb-tab-btn:hover { border-color: #fbbf24 !important; color: #b45309; }
+    .lb-tab-btn.active { background: #0f172a !important; color: #fbbf24 !important; border-color: #0f172a !important; }
+
+    .lb-mode-dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+    .lb-mode-dot.easy     { background: #22c55e; }
+    .lb-mode-dot.normal   { background: #38bdf8; }
+    .lb-mode-dot.hard     { background: #f97316; }
+    .lb-mode-dot.insanity { background: #ef4444; }
+
+    /* Section divider for the embedded blitz leaderboard */
+    .lg-section-divider {
+        display: flex; align-items: center; gap: 14px;
+        margin: 3rem auto 1.75rem auto;
+        max-width: 100%;
+        scroll-margin-top: 24px;
+    }
+    .lg-section-divider .line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, #e2e8f0, transparent); }
+    .lg-section-divider .label {
+        font-size: 0.65rem; font-weight: 900;
+        letter-spacing: 2px; color: #94a3b8;
+        text-transform: uppercase; white-space: nowrap;
+    }
+
+    @@media (max-width: 991.98px) {
+        .lg-hero::after { font-size: 6rem; right: 10px; bottom: -18px; }
+        .lg-rival-list { max-height: 420px; }
+    }
+</style>
+
+<div class="container py-5">
+
+    <!-- HERO -->
+    <div class="lg-hero mb-4 lg-reveal">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <div class="lg-hero-meta"><i class="bi bi-trophy-fill me-2" style="color:#fbbf24;"></i>Leagues &middot; リーグ</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <h1 class="lg-title m-0">@(string.IsNullOrEmpty(player.GamerTag) ? player.UserName : player.GamerTag)</h1>
+                    <button type="button" class="lg-info-btn" data-bs-toggle="modal" data-bs-target="#leaguesGuideModal" title="What are Leagues?">
+                        <i class="bi bi-info-lg fs-5 fw-black"></i>
+                    </button>
+                </div>
+                <div class="lg-hero-meta mt-2">Currently competing in</div>
+                <span class="lg-current-rank text-rank-@leagueKey">@player.CurrentLeague.ToString().ToUpper()</span>
+
+                <div class="d-flex flex-wrap gap-4 mt-4">
+                    <div class="lg-hero-stat">
+                        <span class="v">#@Model.GlobalLevelRank</span>
+                        <span class="l">Global &middot; of @Model.TotalUserCount</span>
+                    </div>
+                    <div class="lg-hero-stat">
+                        <span class="v">#@Model.ArenaRank</span>
+                        <span class="l">Arena Position</span>
+                    </div>
+                    <div class="lg-hero-stat">
+                        <span class="v">@FormatNumber(player.WeeklyXP)</span>
+                        <span class="l">Weekly XP</span>
+                    </div>
+                    <div class="lg-hero-stat">
+                        <span class="v">@FormatNumber(player.Gold)</span>
+                        <span class="l">Gold Banked</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 text-lg-end">
+                @{
+                    DateTime now = DateTime.Now;
+                    int daysUntilMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
+                    if (daysUntilMonday == 0 && now.Hour >= 0) daysUntilMonday = 7;
+                    DateTime targetDate = now.Date.AddDays(daysUntilMonday);
+                }
+                <div class="lg-countdown-pill">
+                    <i class="bi bi-clock-fill"></i>
+                    <span id="countdown-timer" data-target="@targetDate.ToString("yyyy-MM-ddTHH:mm:ss")">...</span>
+                    <span style="opacity:0.7;">until reset</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ARENA CARD -->
+        <div class="col-xl-8 col-lg-7 lg-reveal">
+            <div class="lg-panel lg-arena-card h-100 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="lg-panel-title">
+                            <span class="text-rank-@leagueKey">@player.CurrentLeague.ToString().ToUpper()</span> Arena
+                        </div>
+                        <div class="lg-panel-sub">Top 20% promote, bottom 20% demote</div>
+                    </div>
+                    <i class="bi bi-shield-fill-check fs-4" style="color: #0ea5e9;"></i>
+                </div>
+
+                <div class="lg-arena-rank-display">
+                    <div class="lbl">Your Current Standing</div>
+                    <div class="num">#@Model.ArenaRank</div>
+                    @{
+                        int movement = player.LastWeekArenaRank > 0 ? (player.LastWeekArenaRank - Model.ArenaRank) : 0;
+                    }
+                    @if (movement > 0)
+                    {
+                        <div class="lg-arena-movement up"><i class="bi bi-caret-up-fill"></i> @movement Places Climbed</div>
+                    }
+                    else if (movement < 0)
+                    {
+                        <div class="lg-arena-movement down"><i class="bi bi-caret-down-fill"></i> @System.Math.Abs(movement) Places Dropped</div>
+                    }
+                    else
+                    {
+                        <div class="lg-arena-movement flat"><i class="bi bi-dash-lg"></i> Position Unchanged</div>
+                    }
+                </div>
+
+                <div class="lg-zone-key">
+                    <div class="zk promo">Promotion Zone</div>
+                    <div class="zk safe">Safe Zone</div>
+                    <div class="zk demo">Demotion Zone</div>
+                </div>
+
+                <div class="lg-rival-list">
+                    @foreach (var rival in Model.ArenaRivals)
+                    {
+                        string zoneClass = (rival.Rank <= promoteLimit) ? "zone-promote"
+                            : (rival.Rank > demoteLimit && totalRivals > 3 ? "zone-demote" : "");
+                        <div class="lg-rival @zoneClass @(rival.IsCurrentUser ? "is-self" : "")">
+                            <span class="rk">#@rival.Rank</span>
+                            <div class="d-flex flex-column">
+                                <div>
+                                    <span class="nm">@rival.User.GamerTag</span>
+                                    @if (rival.IsCurrentUser)
+                                    {
+                                        <span class="you-tag">YOU</span>
+                                    }
+                                </div>
+                                @if (rival.Rank <= promoteLimit)
+                                {
+                                    <span class="zone-tag promo mt-1" style="align-self:flex-start;">Promotion</span>
+                                }
+                                else if (zoneClass == "zone-demote")
+                                {
+                                    <span class="zone-tag demo mt-1" style="align-self:flex-start;">Risk Demotion</span>
+                                }
+                            </div>
+                            <span class="xp">@FormatNumber(rival.User.WeeklyXP) <small>XP</small></span>
+                        </div>
+                    }
+                </div>
+
+                <div class="pt-3">
+                    <button type="button" class="lg-cta-btn" data-bs-toggle="modal" data-bs-target="#earnXpModal">
+                        <i class="bi bi-lightning-charge-fill" style="color: #fbbf24;"></i>
+                        Earn More XP
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="col-xl-4 col-lg-5 lg-reveal">
+            <div class="d-flex flex-column gap-4 h-100">
+                <div class="lg-panel">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="lg-panel-title">Top 3 Levels</div>
+                            <div class="lg-panel-sub">Highest level questors</div>
+                        </div>
+                        <span class="lg-head-icon-xp">XP</span>
+                    </div>
+                    <div class="lg-podium-list">
+                        @foreach (var top in Model.LevelLeaderboard)
+                        {
+                            <div class="lg-podium-row rank-@top.Rank @(top.IsCurrentUser ? "is-self" : "")">
+                                <span class="lg-podium-medal r@top.Rank">@top.Rank</span>
+                                <div class="lg-podium-info">
+                                    <div class="lg-podium-name">@top.User.GamerTag</div>
+                                    <div class="lg-podium-sub">@FormatNumber(top.User.TotalEXP) Total XP</div>
+                                </div>
+                                <span class="lg-podium-value">LV @FormatNumber(top.User.Level)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="lg-panel">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="lg-panel-title">Top 3 Gold</div>
+                            <div class="lg-panel-sub">Wealthiest hoarders</div>
+                        </div>
+                        <span class="lg-head-icon-gold-wrap"><span class="gold-coin"></span></span>
+                    </div>
+                    <div class="lg-podium-list">
+                        @foreach (var top in Model.GoldLeaderboard)
+                        {
+                            <div class="lg-podium-row rank-@top.Rank @(top.IsCurrentUser ? "is-self" : "")">
+                                <span class="lg-podium-medal r@top.Rank">@top.Rank</span>
+                                <div class="lg-podium-info">
+                                    <div class="lg-podium-name">@top.User.GamerTag</div>
+                                    <div class="lg-podium-sub">LV @FormatNumber(top.User.Level)</div>
+                                </div>
+                                <span class="lg-podium-value">@FormatNumber(top.User.Gold)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="lg-info-card">
+                    <div class="info-eyebrow"><i class="bi bi-info-circle-fill me-1"></i> What are Leagues?</div>
+                    <div class="info-headline">Compete weekly. Climb the ranks.</div>
+                    <div class="info-body">
+                        Earn XP from quests, flashcards, and KanaBlitz. Top players promote every Monday at midnight.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────
+         EMBEDDED KANABLITZ LEADERBOARD (by difficulty mode, all on Mixed kana)
+         ───────────────────────────────────────────── -->
+    <div id="kanablitz-rankings" class="lg-section-divider lg-reveal">
+        <span class="line"></span>
+        <span class="label"><i class="bi bi-lightning-charge-fill me-1" style="color:#fbbf24;"></i> KanaBlitz Rankings</span>
+        <span class="line"></span>
+    </div>
+
+    <div class="text-center mb-4 lg-reveal">
+        <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning-subtle px-3 py-2 fw-black shadow-sm" style="letter-spacing: 1px;">
+            <i class="bi bi-bar-chart-fill me-1"></i> KANABLITZ LEADERBOARD
+        </span>
+        <h2 class="display-5 fw-black text-dark mt-3 mb-2" style="letter-spacing: -2px;">
+            Most Kana <span class="text-warning">Correct</span>
+        </h2>
+        <p class="lead fw-bold text-muted mx-auto mb-0" style="max-width: 640px;">
+            Mixed-kana benchmark across every difficulty. Same pool for everyone &mdash; the only thing that moves you up is more correct answers at your chosen tempo.
+        </p>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap lg-reveal">
+        <button class="btn btn-light fw-black rounded-pill px-4 py-2 lb-tab-btn"        data-mode="easy"     onclick="loadBoard('easy', this)"><span class="lb-mode-dot easy"></span>EASY</button>
+        <button class="btn btn-light fw-black rounded-pill px-4 py-2 lb-tab-btn active" data-mode="normal"   onclick="loadBoard('normal', this)"><span class="lb-mode-dot normal"></span>NORMAL</button>
+        <button class="btn btn-light fw-black rounded-pill px-4 py-2 lb-tab-btn"        data-mode="hard"     onclick="loadBoard('hard', this)"><span class="lb-mode-dot hard"></span>HARD</button>
+        <button class="btn btn-light fw-black rounded-pill px-4 py-2 lb-tab-btn"        data-mode="insanity" onclick="loadBoard('insanity', this)"><span class="lb-mode-dot insanity"></span>INSANITY</button>
+    </div>
+
+    <div id="lb-self-card" class="lg-panel mb-4 d-none lg-reveal">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="lg-panel-title">Your Best</div>
+                <div class="lg-panel-sub"><span id="lb-self-mode">Normal</span> &middot; Mixed</div>
+            </div>
+            <div class="d-flex align-items-center gap-4 flex-wrap">
+                <div class="lg-hero-stat">
+                    <span class="v" style="color:#0f172a;">#<span id="lb-self-rank">—</span></span>
+                    <span class="l" style="color:#94a3b8;">Rank</span>
+                </div>
+                <div class="lg-hero-stat">
+                    <span class="v" style="color:#0f172a;"><span id="lb-self-correct">0</span></span>
+                    <span class="l" style="color:#94a3b8;">Kana Correct</span>
+                </div>
+                <div class="lg-hero-stat">
+                    <span class="v" style="color:#0f172a;"><span id="lb-self-points">0</span></span>
+                    <span class="l" style="color:#94a3b8;">Points</span>
+                </div>
+                <div class="lg-hero-stat">
+                    <span class="v" style="color:#0f172a;"><span id="lb-self-acc">0</span>%</span>
+                    <span class="l" style="color:#94a3b8;">Accuracy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg-panel lg-reveal">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <div class="lg-panel-title">Top 50</div>
+                <div class="lg-panel-sub" id="lb-mode-sub">Normal &middot; Mixed</div>
+            </div>
+            <i class="bi bi-trophy-fill fs-4" style="color:#fbbf24;"></i>
+        </div>
+
+        <div id="lb-loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 fw-bold text-muted mb-0">Pulling latest scores...</p>
+        </div>
+
+        <div id="lb-empty" class="text-center py-5 d-none">
+            <i class="bi bi-trophy fs-1 text-muted opacity-50"></i>
+            <p class="mt-3 fw-bold text-muted mb-0">No runs recorded yet for this mode. Be the first.</p>
+            <a href="/KanaBlitz" class="btn btn-primary fw-black rounded-pill px-4 py-2 mt-3">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Run KanaBlitz
+            </a>
+        </div>
+
+        <div id="lb-list" class="lg-podium-list d-none"></div>
+    </div>
+
+</div>
+
+<!-- EARN XP CHOICE MODAL -->
+<div class="modal fade" id="earnXpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+
+            <div class="bg-warning p-4 text-center position-relative">
+                <div class="position-absolute top-50 start-0 translate-middle-y ps-4 text-dark opacity-25">
+                    <i class="bi bi-lightning-charge-fill display-4"></i>
+                </div>
+                <h4 class="fw-black text-dark m-0 text-uppercase" style="letter-spacing: 2px;">Earn More XP</h4>
+                <p class="text-dark fw-bold small mb-0 mt-1 opacity-75">Pick your training ground</p>
+                <button type="button" class="btn-close position-absolute top-50 end-0 translate-middle-y me-4" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4 bg-white">
+                <div class="d-flex flex-column gap-3">
+                    <a class="earn-choice blitz" asp-controller="KanaBlitz" asp-action="Index">
+                        <div class="ec-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                        <div>
+                            <div class="ec-title">KanaBlitz Arena</div>
+                            <div class="ec-sub">Fast paced kana drills with combo multipliers.</div>
+                        </div>
+                        <i class="bi bi-arrow-right ec-arrow"></i>
+                    </a>
+
+                    <a class="earn-choice cards" asp-controller="Flashcards" asp-action="Index">
+                        <div class="ec-icon"><i class="bi bi-card-list"></i></div>
+                        <div>
+                            <div class="ec-title">Flashcards</div>
+                            <div class="ec-sub">Spaced repetition reviews with steady XP gains.</div>
+                        </div>
+                        <i class="bi bi-arrow-right ec-arrow"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LEAGUES INFO MODAL -->
+<div class="modal fade" id="leaguesGuideModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+
+            <div class="bg-warning p-4 text-center position-relative">
+                <div class="position-absolute top-50 start-0 translate-middle-y ps-4 text-dark opacity-25">
+                    <i class="bi bi-trophy-fill display-4"></i>
+                </div>
+                <h4 class="fw-black text-dark m-0 text-uppercase" style="letter-spacing: 2px;">Leagues Field Manual</h4>
+                <p class="text-dark fw-bold small mb-0 mt-1 opacity-75">Compete, climb, and cash in every week</p>
+                <button type="button" class="btn-close position-absolute top-50 end-0 translate-middle-y me-4" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4 p-md-5 bg-white">
+
+                <div class="mb-4">
+                    <h5 class="fw-black text-dark text-uppercase mb-2" style="letter-spacing: 1px;">What are Leagues?</h5>
+                    <p class="text-muted fw-bold mb-0" style="font-size: 0.9rem; line-height: 1.6;">
+                        Leagues are weekly competitive arenas. Every player is placed in a tier based on their progress, and you compete only against other players in your own tier. Earn weekly XP through any activity on NipponQuest, climb your arena, and bank a guaranteed gold payout when the week resets.
+                    </p>
+                </div>
+
+                <div class="row g-3 mb-2">
+                    <div class="col-md-4">
+                        <div class="info-pillar">
+                            <div class="info-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-bullseye"></i></div>
+                            <h6 class="fw-black text-dark text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">How to Participate</h6>
+                            <p class="text-muted small fw-bold mb-0">Just play. Flashcard reviews, KanaBlitz runs, and quest completions all feed your Weekly XP automatically.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-pillar">
+                            <div class="info-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-arrow-up-circle-fill"></i></div>
+                            <h6 class="fw-black text-dark text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Promotion Rules</h6>
+                            <p class="text-muted small fw-bold mb-0">Finish in the top 20% of your arena to promote into the next tier when the week resets.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-pillar">
+                            <div class="info-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-down-circle-fill"></i></div>
+                            <h6 class="fw-black text-dark text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Demotion Rules</h6>
+                            <p class="text-muted small fw-bold mb-0">Land in the bottom 20% of your arena and you drop a tier. Stay active to hold your ground.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-divider"></div>
+
+                <!-- ── PATH TO LEGEND (inside the (i) modal) ── -->
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h6 class="fw-black text-dark text-uppercase mb-1" style="letter-spacing: 1px;">Path to Legend</h6>
+                        <div class="lg-panel-sub">Weekly gold reward by tier</div>
+                    </div>
+                    <i class="bi bi-signpost-split-fill fs-4" style="color: #0ea5e9;"></i>
+                </div>
+
+                <div class="lg-tier-ladder mb-2">
+                    @foreach (var rank in Enum.GetValues(typeof(LeagueRank)).Cast<LeagueRank>().Reverse())
+                    {
+                        var isCurrent = rank == player.CurrentLeague;
+                        <div class="lg-tier-row @(isCurrent ? "is-current" : "")">
+                            <div class="lg-tier-info">
+                                <div class="lg-rank-line">
+                                    <span class="rank-text @rank.ToString().ToLower()">@rank</span>
+                                    @if (isCurrent)
+                                    {
+                                        <span class="lg-here-tag"><i class="bi bi-geo-alt-fill"></i> You Are Here</span>
+                                    }
+                                </div>
+                                <div class="jp-name">@GetRankFullJapanese(rank)</div>
+                                <div class="romaji">@GetRankRomaji(rank)</div>
+                            </div>
+                            <div class="lg-tier-reward">
+                                <div class="amt">
+                                    @FormatNumber(GetWeeklyGold(rank))
+                                    <span class="gold-coin"></span>
+                                </div>
+                                <div class="lbl">per week</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="info-divider"></div>
+
+                <h6 class="fw-black text-dark text-uppercase mb-3" style="letter-spacing: 1px;">Weekly Reset</h6>
+                <ul class="info-row-list mb-2">
+                    <li><i class="bi bi-clock-fill"></i><span><strong class="text-dark">Reset day:</strong> Every Monday at 00:00 local server time.</span></li>
+                    <li>
+                        <span class="gold-coin" style="width: 20px; height: 20px; font-size: 0.65rem; flex-shrink: 0; margin-top: 1px;"></span>
+                        <span><strong class="text-dark">Gold payout:</strong> Awarded based on the tier you finished the week in, from 150 at Sprout up to 1,250 at Legend.</span>
+                    </li>
+                    <li><i class="bi bi-arrow-repeat"></i><span><strong class="text-dark">Weekly XP:</strong> Resets to zero so every player starts the week on equal footing.</span></li>
+                </ul>
+
+                <div class="info-divider"></div>
+
+                <h6 class="fw-black text-dark text-uppercase mb-3" style="letter-spacing: 1px;">Pro Tips</h6>
+                <ul class="info-row-list">
+                    <li><i class="bi bi-lightbulb-fill"></i><span>Stack a daily streak. Login bonuses and combo multipliers compound your weekly XP fast.</span></li>
+                    <li><i class="bi bi-lightbulb-fill"></i><span>Mix activities. KanaBlitz pays burst XP, while flashcards drip steady gains across the week.</span></li>
+                    <li><i class="bi bi-lightbulb-fill"></i><span>Watch the Demotion Zone. Dropping below the line on Sunday night costs you a tier and a gold bonus.</span></li>
+                </ul>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string GetRankFullJapanese(LeagueRank rank) => rank switch
+    {
+        LeagueRank.Legend => "伝説 (でんせつ)",
+        LeagueRank.Dragon => "龍 (りゅう)",
+        LeagueRank.Challenger => "チャレンジャー",
+        LeagueRank.Master => "師匠 (ししょう)",
+        LeagueRank.Diamond => "金剛 (こんごう)",
+        LeagueRank.Gold => "黄金 (おうごん)",
+        LeagueRank.Iron => "鉄 (てつ)",
+        LeagueRank.Wood => "木 (き)",
+        LeagueRank.Sprout => "芽 (め)",
+        _ => "修行者"
+    };
+    public string GetRankRomaji(LeagueRank rank) => rank switch
+    {
+        LeagueRank.Legend => "Densetsu",
+        LeagueRank.Dragon => "Ryū",
+        LeagueRank.Challenger => "Charenjā",
+        LeagueRank.Master => "Shishō",
+        LeagueRank.Diamond => "Kongō",
+        LeagueRank.Gold => "Ōgon",
+        LeagueRank.Iron => "Tetsu",
+        LeagueRank.Wood => "Ki",
+        LeagueRank.Sprout => "Me",
+        _ => "Senshu"
+    };
+    public int GetWeeklyGold(LeagueRank rank) => rank switch
+    {
+        LeagueRank.Sprout     => 150,
+        LeagueRank.Wood       => 250,
+        LeagueRank.Iron       => 350,
+        LeagueRank.Gold       => 450,
+        LeagueRank.Diamond    => 550,
+        LeagueRank.Master     => 650,
+        LeagueRank.Challenger => 850,
+        LeagueRank.Dragon     => 1050,
+        LeagueRank.Legend     => 1250,
+        _ => 150
+    };
+    public string FormatNumber(long n)
+    {
+        long abs = System.Math.Abs(n);
+        if (abs >= 1_000_000_000_000L) return (n / 1_000_000_000_000.0).ToString("0.#") + "T";
+        if (abs >= 1_000_000_000L)     return (n / 1_000_000_000.0).ToString("0.#") + "B";
+        if (abs >= 1_000_000L)         return (n / 1_000_000.0).ToString("0.#") + "M";
+        if (abs >= 1_000L)             return (n / 1_000.0).ToString("0.#") + "K";
+        return n.ToString("N0");
+    }
+    public string FormatNumber(int n) => FormatNumber((long)n);
+}
+
+@section Scripts {
+    <script>
+        // ── Weekly reset countdown ──
+        function updateCountdown() {
+            const timerElement = document.getElementById('countdown-timer');
+            if (!timerElement) return;
+            const targetDate = new Date(timerElement.getAttribute('data-target'));
+            const now = new Date();
+            const diff = targetDate - now;
+            if (diff <= 0) { timerElement.innerHTML = "0s"; return; }
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            let display = d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+            timerElement.innerHTML = display;
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // ── KanaBlitz leaderboard (by difficulty mode, always Mixed alphabet) ──
+        let currentSelfId = null;
+
+        async function loadBoard(mode, btn) {
+            document.querySelectorAll('.lb-tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const list  = document.getElementById('lb-list');
+            const load  = document.getElementById('lb-loading');
+            const empty = document.getElementById('lb-empty');
+
+            list.classList.add('d-none');
+            empty.classList.add('d-none');
+            load.classList.remove('d-none');
+            load.innerHTML = '<div class="spinner-border text-primary" role="status"></div><p class="mt-3 fw-bold text-muted mb-0">Pulling latest scores...</p>';
+
+            const labelMap = { easy: 'Easy', normal: 'Normal', hard: 'Hard', insanity: 'Insanity' };
+            document.getElementById('lb-mode-sub').textContent  = `${labelMap[mode]} \u00b7 Mixed`;
+            document.getElementById('lb-self-mode').textContent = labelMap[mode];
+
+            try {
+                // Endpoint lives on LeaguesController. Difficulty is now the axis;
+                // the controller hardcodes alphabet to "mixed" for leaderboard fairness.
+                const res = await fetch(`/Leagues/GetBlitzBoard?difficulty=${mode}&top=50`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                const selfCard = document.getElementById('lb-self-card');
+                if (data.self) {
+                    selfCard.classList.remove('d-none');
+                    document.getElementById('lb-self-rank').innerText    = data.self.rank;
+                    document.getElementById('lb-self-correct').innerText = data.self.bestCorrect;
+                    document.getElementById('lb-self-points').innerText  = (data.self.bestPoints || 0).toLocaleString();
+                    document.getElementById('lb-self-acc').innerText     = Math.round((data.self.bestAccuracy || 0) * 100);
+                    currentSelfId = data.self.userId;
+                } else {
+                    selfCard.classList.add('d-none');
+                    currentSelfId = null;
+                }
+
+                list.innerHTML = '';
+                if (!data.rows || data.rows.length === 0) {
+                    load.classList.add('d-none');
+                    empty.classList.remove('d-none');
+                    return;
+                }
+
+                data.rows.forEach((r, idx) => {
+                    const rank = idx + 1;
+                    const isSelf = currentSelfId && r.userId === currentSelfId;
+
+                    const row = document.createElement('div');
+                    row.className = 'lg-podium-row' + (rank === 1 ? ' rank-1' : '') + (isSelf ? ' is-self' : '');
+
+                    let medal = '';
+                    if (rank === 1) medal = '<div class="lg-podium-medal r1">1</div>';
+                    else if (rank === 2) medal = '<div class="lg-podium-medal r2">2</div>';
+                    else if (rank === 3) medal = '<div class="lg-podium-medal r3">3</div>';
+                    else medal = `<div class="lg-podium-medal" style="background:#f1f5f9;border-color:#e2e8f0;color:#475569;">${rank}</div>`;
+
+                    row.innerHTML = `
+                        ${medal}
+                        <div class="lg-podium-info">
+                            <div class="lg-podium-name">${escapeHtml(r.name)}${isSelf ? ' <span class="you-tag" style="background:#3b82f6;color:#fff;font-size:0.55rem;font-weight:900;letter-spacing:1px;padding:2px 8px;border-radius:50px;margin-left:6px;">YOU</span>' : ''}</div>
+                            <div class="lg-podium-sub">${(r.bestPoints || 0).toLocaleString()} pts &middot; ${Math.round((r.bestAccuracy || 0) * 100)}% acc &middot; combo ${r.bestCombo || 0}x</div>
+                        </div>
+                        <div class="lg-podium-value">${r.bestCorrect} <span style="font-size:0.6rem;color:#94a3b8;font-weight:800;letter-spacing:1px;">CORRECT</span></div>
+                    `;
+
+                    list.appendChild(row);
+                });
+
+                load.classList.add('d-none');
+                list.classList.remove('d-none');
+            } catch (e) {
+                console.error('[v0] Blitz board load failed:', e);
+                load.innerHTML = '<p class="text-danger fw-bold mb-0">Failed to load leaderboard.</p>';
+            }
+        }
+
+        function escapeHtml(s) {
+            return (s || '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Reveal-up animations
+            const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('active'); }), { threshold: 0.05 });
+            document.querySelectorAll('.lg-reveal').forEach(el => obs.observe(el));
+
+            // Initial blitz board load — Normal as default
+            loadBoard('normal', document.querySelector('.lb-tab-btn[data-mode="normal"]'));
+
+            // Smooth-scroll to rankings if the user landed via /Leagues#kanablitz-rankings
+            if (window.location.hash === '#kanablitz-rankings') {
+                setTimeout(() => {
+                    const target = document.getElementById('kanablitz-rankings');
+                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 150);
+            }
+        });
+    </script>
+}

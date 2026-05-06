@@ -1,0 +1,375 @@
+﻿@model IEnumerable<NipponQuest.Models.DeckViewModel>
+
+<div class="container py-5 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            
+            <!-- ALERTS (Exp/Gold Rewards) -->
+            @if (TempData["Message"] != null)
+            {
+                <div class="alert alert-success shadow-sm rounded-pill fw-bold border-0 d-flex align-items-center mb-4 px-4 py-3 alert-dismissible fade show">
+                    <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+                    <div>@TempData["Message"]</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- 1. TOP HEADER SECTION -->
+            <div class="d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3">
+                <div>
+                    <h1 class="fw-black text-dark m-0 text-uppercase tracking-tight d-flex align-items-center flex-wrap gap-3" style="font-size: 2.8rem; letter-spacing: -1px;">
+                        <span>MY <span class="text-primary hero-glow-text">FLASHCARDS</span></span>
+                        
+                        <button class="btn btn-white rounded-circle shadow-sm p-0 d-flex align-items-center justify-content-center text-muted hover-blue transition-all hover-lift" 
+                                style="width: 38px; height: 38px; margin-bottom: 8px;" 
+                                data-bs-toggle="modal" data-bs-target="#guideModal" 
+                                title="How to use Flashcards">
+                            <i class="bi bi-info-lg fs-5 fw-black"></i>
+                        </button>
+                    </h1>
+                    <p class="text-muted fw-bold m-0 mt-1 text-uppercase tracking-wider" style="font-size: 0.85rem;">Organize and master your Japanese language progress</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a asp-action="Discover" class="btn btn-white rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center transition-all hover-lift">
+                        <i class="bi bi-globe-americas me-2 fs-5 text-indigo"></i> DISCOVER
+                    </a>
+                    <button class="btn btn-white rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center transition-all hover-lift" onclick="document.getElementById('ankiUpload').click()">
+                        <i class="bi bi-file-earmark-arrow-up me-2 fs-5 text-primary"></i> ANKI IMPORT
+                    </button>
+                    <a asp-action="Create" class="btn btn-primary rounded-pill px-4 fw-black shadow-sm d-flex align-items-center btn-cta-premium transition-all hover-lift">
+                        <i class="bi bi-plus-lg me-2 fs-5"></i> CREATE NEW
+                    </a>
+                </div>
+            </div>
+
+            <form id="ankiForm" asp-action="ImportAnki" method="post" enctype="multipart/form-data" style="display:none;">
+                <input type="file" id="ankiUpload" name="ankiFile" onchange="this.form.submit()" accept=".apkg" />
+            </form>
+
+            <!-- 2. CONSOLIDATED STATS CARD -->
+            <div class="static-card border-0 rounded-4 shadow-sm overflow-hidden bg-white mb-5">
+                <div class="row g-0 text-center">
+                    <div class="col-md-3 p-4 border-end border-light-subtle transition-all hover-bg-light">
+                        <i class="bi bi-stack fs-3 text-primary mb-2 d-block"></i>
+                        <div class="stat-number fw-black" style="font-size: 2.2rem;">@Model.Count()</div>
+                        <span class="text-muted small fw-bold text-uppercase tracking-wider">Total Decks</span>
+                    </div>
+                    <div class="col-md-3 p-4 border-end border-light-subtle transition-all hover-bg-light">
+                        <i class="bi bi-files fs-3 text-primary mb-2 d-block"></i>
+                        <div class="stat-number fw-black" style="font-size: 2.2rem;">@Model.Sum(x => x.CardCount).ToString("N0")</div>
+                        <span class="text-muted small fw-bold text-uppercase tracking-wider">Total Cards</span>
+                    </div>
+                    <div class="col-md-3 p-4 border-end border-light-subtle transition-all hover-bg-light">
+                        <i class="bi bi-alarm fs-3 text-danger mb-2 d-block"></i>
+                        <div class="stat-number fw-black @(Model.Sum(x => x.DueCount) > 0 ? "text-danger" : "text-dark")" style="font-size: 2.2rem;">
+                            @Model.Sum(x => x.DueCount).ToString("N0")
+                        </div>
+                        <span class="text-muted small fw-bold text-uppercase tracking-wider">Due Today</span>
+                    </div>
+                    <div class="col-md-3 p-4 bg-soft-blue transition-all">
+                        <i class="bi bi-check-circle-fill fs-3 text-success mb-2 d-block"></i>
+                        <div class="stat-number fw-black text-dark" style="font-size: 2.2rem;">@(ViewBag.ReviewedToday ?? 0)</div>
+                        <span class="text-muted small fw-bold text-uppercase tracking-wider">Reviewed Today</span>
+                    </div>
+                </div>
+                
+                @if (Model.Sum(x => x.DueCount) > 0)
+                {
+                    <div class="bg-warning bg-opacity-10 border-top border-warning p-3 d-flex justify-content-between align-items-center px-4">
+                        <span class="fw-bold text-dark">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1 fs-5 align-middle"></i> 
+                            <strong>@Model.Sum(x => x.DueCount).ToString("N0") cards</strong> are due today. Keep your streak going!
+                        </span>
+                        <a asp-action="StudyAllDue" class="btn btn-warning fw-black rounded-pill px-4 shadow-sm text-dark btn-sm transition-all hover-lift">
+                            STUDY ALL NOW <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <!-- 3. ACTIVE DECKS SECTION -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-black text-dark text-uppercase m-0 tracking-tight">ACTIVE DECKS</h4>
+                <a href="https://ankiweb.net/shared/decks/japanese" target="_blank" class="text-muted fw-bold text-decoration-none hover-blue small text-uppercase transition-all d-flex align-items-center">
+                    <i class="bi bi-box-arrow-up-right me-2"></i> Browse AnkiWeb
+                </a>
+            </div>
+
+            <div class="row g-4 mb-5 pb-5">
+                @foreach (var item in Model)
+                {
+                    var pct = item.CardCount > 0 ? (100 - (item.DueCount * 100 / item.CardCount)) : 0;
+                    
+                    // Determine the card's solid background color
+                    var hexColor = !string.IsNullOrEmpty(item.ThemeColor) && item.ThemeColor != "#ffffff" ? item.ThemeColor : (item.IsCommunityDeck ? "#e0f2fe" : "#ffffff"); 
+
+                    <div class="col-md-6 col-xl-4">
+                        <!-- FULL CARD BACKGROUND APPLIED HERE -->
+                        <div class="static-card h-100 border-0 rounded-4 shadow-sm p-0 d-flex flex-column position-relative transition-all hover-lift" style="background-color: @hexColor !important;">
+                            
+                            <!-- Card Body -->
+                            <div class="p-4 flex-grow-1 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <h4 class="fw-black text-dark m-0 tracking-tight text-truncate pe-2" style="max-width: 75%;" title="@item.Title">
+                                        @item.Title
+                                    </h4>
+                                    <span class="badge bg-white text-primary shadow-sm rounded-pill fw-bold flex-shrink-0" style="font-size: 0.75rem;">@item.CardCount Cards</span>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                                    <div class="small fw-bold d-flex align-items-center opacity-75 text-dark">
+                                        <i class="bi bi-person-circle me-1"></i>
+                                        <span>By @(item.IsCommunityDeck ? (item.AuthorName ?? "Community User") : "You")</span>
+                                    </div>
+                                    
+                                    @if (item.IsPublic && !item.IsCommunityDeck)
+                                    {
+                                        <span class="badge bg-dark bg-opacity-10 text-dark small fw-bold px-2 rounded-1 d-flex align-items-center" style="font-size: 0.65rem;">
+                                            <i class="bi bi-globe-americas me-1"></i> Published
+                                        </span>
+                                    }
+                                    @if (item.IsCommunityDeck)
+                                    {
+                                        <span class="badge bg-dark bg-opacity-75 text-white small fw-bold text-uppercase px-2 rounded-1 shadow-sm" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                            Community Deck
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="flex-grow-1 mb-4">
+                                    <p class="text-dark small fw-bold m-0 opacity-75" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4rem;">
+                                        @(string.IsNullOrWhiteSpace(item.Description) ? "No description provided." : item.Description.Replace("(Community Deck)", "").Trim())
+                                    </p>
+                                </div>
+
+                                <!-- Mastery Bar -->
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-dark text-uppercase tracking-wider opacity-75" style="font-size: 0.65rem; font-weight: 900;">MASTERY</span>
+                                        <span class="text-dark" style="font-size: 0.65rem; font-weight: 900;">@pct%</span>
+                                    </div>
+                                    <div class="progress rounded-pill shadow-none" style="height: 6px; background: rgba(0,0,0,0.1);">
+                                        <div class="progress-bar bg-dark opacity-75" style="width: @pct%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer Actions -->
+                            <div class="px-4 pb-4 bg-transparent d-flex justify-content-between align-items-center gap-2 mt-2">
+                                
+                                <div class="dropdown flex-grow-1">
+                                    <button class="btn btn-primary w-100 rounded-pill fw-black shadow-sm dropdown-toggle py-2 btn-cta-premium transition-all hover-lift" type="button" data-bs-toggle="dropdown">
+                                        START STUDY (@(item.DueCount > 0 ? item.DueCount : 0))
+                                    </button>
+                                    <ul class="dropdown-menu shadow-lg border-0 rounded-4 p-2 mt-2" style="min-width: 240px;">
+                                        <li><h6 class="dropdown-header fw-bold text-uppercase text-primary small tracking-wider">Select Quest Length</h6></li>
+                                        <li>
+                                            <a class="dropdown-item rounded-3 py-2 d-flex align-items-center justify-content-between transition-all" href="@Url.Action("StartSession", new { id = item.Id, length = 10 })">
+                                                <span class="fw-bold text-dark">10 Cards</span>
+                                                <span class="text-muted small fw-bold ms-3">+10 EXP / +5 <span class="gold-coin"></span></span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item rounded-3 py-2 d-flex align-items-center justify-content-between transition-all" href="@Url.Action("StartSession", new { id = item.Id, length = 15 })">
+                                                <span class="fw-bold text-dark">15 Cards</span>
+                                                <span class="text-muted small fw-bold ms-3">+15 EXP / +5 <span class="gold-coin"></span></span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item rounded-3 py-2 d-flex align-items-center justify-content-between transition-all" href="@Url.Action("StartSession", new { id = item.Id, length = 20 })">
+                                                <span class="fw-bold text-dark">20 Cards</span>
+                                                <span class="text-muted small fw-bold ms-3">+20 EXP / +5 <span class="gold-coin"></span></span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item rounded-3 py-2 d-flex align-items-center justify-content-between custom-quest-btn transition-all" href="#" data-bs-toggle="modal" data-bs-target="#customQuestModal" data-deck-id="@item.Id">
+                                                <span class="fw-bold text-dark"><i class="bi bi-gear-fill text-muted me-1"></i> Custom</span>
+                                                <span class="text-muted small fw-bold ms-3">1:1 EXP / +5 <span class="gold-coin"></span></span>
+                                            </a>
+                                        </li>
+                                        @if (item.DueCount > 0)
+                                        {
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item rounded-3 py-2 bg-warning bg-opacity-10 text-dark fw-black d-flex justify-content-between align-items-center transition-all" href="@Url.Action("StartSession", new { id = item.Id, length = item.DueCount })">
+                                                    <span><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Study All Due (@item.DueCount)</span>
+                                                    <span class="text-dark small fw-black opacity-75 ms-2">+@item.DueCount EXP / +5 <span class="gold-coin"></span></span>
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+
+                                <div class="d-flex gap-1 flex-shrink-0">
+                                    @if (!item.IsCommunityClone)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-white rounded-circle text-secondary d-flex align-items-center justify-content-center border-0 shadow-sm transition-all hover-lift" style="width: 40px; height: 40px;" title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a asp-action="AddCard" asp-route-deckId="@item.Id" class="btn btn-white rounded-circle text-secondary d-flex align-items-center justify-content-center border-0 shadow-sm transition-all hover-lift" style="width: 40px; height: 40px;" title="Add Card">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </a>
+                                    }
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-white rounded-circle text-danger d-flex align-items-center justify-content-center border-0 shadow-sm transition-all hover-danger hover-lift" style="width: 40px; height: 40px;" title="Delete">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inboxes text-muted opacity-25 display-1 mb-3 d-block"></i>
+                    <h4 class="fw-black text-dark text-uppercase">No Decks Found</h4>
+                    <p class="text-muted fw-bold">Import an Anki file or create a new deck to begin your quest.</p>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+<!-- GUIDE AND CUSTOM QUEST MODALS REMAIN THE SAME -->
+<div class="modal fade" id="guideModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+            <div class="bg-primary p-4 text-center position-relative">
+                <div class="position-absolute top-50 start-0 translate-middle-y ps-4 text-white opacity-25">
+                    <i class="bi bi-journal-bookmark-fill display-4"></i>
+                </div>
+                <h4 class="fw-black text-white m-0 text-uppercase tracking-widest">Quest Log: Flashcard Guide</h4>
+                <button type="button" class="btn-close btn-close-white position-absolute top-50 end-0 translate-middle-y me-4" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-4 p-md-5 bg-white">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="d-flex align-items-start gap-3 p-3 rounded-4 bg-light transition-all hover-lift">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2">
+                                <i class="bi bi-arrow-repeat fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-black text-dark text-uppercase tracking-tight mb-1">The Quest System (Spaced Repetition)</h6>
+                                <p class="text-muted small fw-bold mb-0">NipponQuest utilizes a Spaced Repetition System. Cards you struggle with (marked "Forgot" or "Hard") will appear more frequently, while cards you know well ("Perfect") will be pushed further into the future to optimize your memory retention.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start gap-3 p-3 rounded-4 bg-light transition-all hover-lift h-100">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-2">
+                                <i class="bi bi-pencil-square fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-black text-dark text-uppercase tracking-tight mb-1">Creating & Editing Decks</h6>
+                                <p class="text-muted small fw-bold mb-0">Click the <strong>Create New</strong> button to forge an empty deck. To manage an existing deck, use the edit icons on the deck card. You can add Japanese text, meanings, and attach image/audio files.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start gap-3 p-3 rounded-4 bg-light transition-all hover-lift h-100">
+                            <div class="bg-info bg-opacity-10 text-info rounded-3 p-2">
+                                <i class="bi bi-file-earmark-arrow-up fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-black text-dark text-uppercase tracking-tight mb-1">Anki Import</h6>
+                                <p class="text-muted small fw-bold mb-0">Already have Anki decks? Export your deck as an <code>.apkg</code> file directly from Anki. Click the <strong>Anki Import</strong> button to extract your cards, images, and audio seamlessly.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-5 text-center">
+                    <button type="button" class="btn btn-primary rounded-pill px-5 py-3 fw-black shadow-sm text-uppercase tracking-wider btn-cta-premium w-100" data-bs-dismiss="modal">
+                        Understood!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="customQuestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+            <div class="bg-primary p-4 text-center position-relative">
+                <h5 class="fw-black text-white m-0 text-uppercase tracking-widest"><i class="bi bi-gear-fill me-2 opacity-50"></i> Custom Quest</h5>
+                <button type="button" class="btn-close btn-close-white position-absolute top-50 end-0 translate-middle-y me-4" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4 p-md-5 bg-white">
+                <form asp-action="StartSession" method="get">
+                    <input type="hidden" name="id" id="customQuestDeckId" value="" />
+                    <div class="text-center">
+                        <p class="text-muted small fw-bold mb-4 text-uppercase tracking-wider">How many cards do you want to study?</p>
+                        
+                        <input type="number" name="length" class="form-control form-control-lg text-center fw-black mb-4 bg-light border-0 shadow-sm rounded-4 py-3" style="font-size: 2rem;" value="30" min="1" max="1000" required />
+                        
+                        <div class="d-grid gap-3 mt-4">
+                            <button type="submit" class="btn btn-primary rounded-pill fw-black py-3 shadow-sm text-uppercase tracking-wider btn-cta-premium transition-all hover-lift">
+                                START QUEST
+                            </button>
+                            <button type="button" class="btn btn-light rounded-pill fw-bold text-muted text-uppercase tracking-wider py-2 transition-all hover-lift" data-bs-dismiss="modal">
+                                CANCEL
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f8fafc; }
+
+    .btn-white { background: #fff; border: 1px solid #e2e8f0; }
+    .btn-white:hover { background: #f8fafc; border-color: #cbd5e1; }
+    
+    .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important; }
+    
+    .hover-bg-light:hover { background-color: #f8fafc; }
+    .hover-blue:hover { color: #0ea5e9 !important; border-color: #0ea5e9 !important; }
+    .hover-indigo:hover { color: #6366f1 !important; border-color: #6366f1 !important; background-color: #f8fafc; }
+    .hover-danger:hover { background-color: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
+    
+    .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hero-glow-text { text-shadow: 0 0 20px rgba(14, 165, 233, 0.2); }
+    
+    .dropdown-menu { z-index: 1050; }
+    .dropdown-item:hover { background-color: #f0f9ff !important; transform: translateX(4px); }
+
+    .gold-coin {
+        background: linear-gradient(135deg, #FFD700 0%, #FFB900 100%);
+        border-radius: 50%;
+        border: 1.5px solid #B45309;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        color: #451a03 !important; 
+    }
+    .gold-coin::after { content: "G"; }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            document.querySelectorAll('.custom-quest-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const deckId = this.getAttribute('data-deck-id');
+                    document.getElementById('customQuestDeckId').value = deckId;
+                });
+            });
+        });
+    </script>
+}

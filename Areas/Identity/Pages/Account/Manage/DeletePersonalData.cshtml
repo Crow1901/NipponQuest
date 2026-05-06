@@ -1,0 +1,35 @@
+﻿@page
+@model DeletePersonalDataModel
+@{
+    ViewData["Title"] = "Delete Personal Data";
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+}
+
+<h3 class="fw-black text-danger mb-4"><i class="bi bi-exclamation-triangle-fill me-2"></i> Delete Account</h3>
+
+<div class="alert alert-danger rounded-4 fw-bold shadow-sm mb-4 p-4">
+    <p class="m-0">
+        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong> All of your flashcard decks, reviews, and progress will be lost forever.
+    </p>
+</div>
+
+<form id="delete-user" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3 fw-bold" role="alert"></div>
+
+    @if (Model.RequirePassword)
+    {
+        <div class="form-floating mb-4">
+            <input asp-for="Input.Password" class="form-control form-control-lg custom-input" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
+            <label asp-for="Input.Password" class="form-label text-muted fw-bold ps-4">CURRENT PASSWORD</label>
+            <span asp-validation-for="Input.Password" class="text-danger small fw-bold mt-1 d-block"></span>
+        </div>
+    }
+
+    <button class="btn btn-danger rounded-pill px-5 py-3 fw-black shadow-sm text-uppercase tracking-wider hover-lift mt-2" type="submit">
+        Permanently Delete Account
+    </button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
