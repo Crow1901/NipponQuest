@@ -165,7 +165,11 @@ static string ConvertPostgresUriToConnectionString(string uriString)
     var username = userInfo[0];
     var password = userInfo.Length > 1 ? userInfo[1] : "";
     var host = uri.Host;
-    var port = uri.Port;
+
+    // If the URI doesn't explicitly state a port, uri.Port returns -1.
+    // In that case, default to the standard Postgres port: 5432.
+    var port = uri.Port == -1 ? 5432 : uri.Port;
+
     var database = uri.AbsolutePath.TrimStart('/');
 
     // Formats URI variables into valid standard .NET key-value segments with secure production SSL requirements
