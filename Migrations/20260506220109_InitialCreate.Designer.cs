@@ -9,11 +9,11 @@ using NipponQuest.Data;
 
 #nullable disable
 
-namespace NipponQuest.Data.Migrations
+namespace NipponQuest.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260430122016_InitialCreate1")]
-    partial class InitialCreate1
+    [Migration("20260506220109_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -170,6 +170,9 @@ namespace NipponQuest.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("BlitzAccuracyJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -178,6 +181,9 @@ namespace NipponQuest.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("CurrentXP")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DailyStreak")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
@@ -194,7 +200,13 @@ namespace NipponQuest.Data.Migrations
                     b.Property<int>("Gold")
                         .HasColumnType("int");
 
+                    b.Property<int>("HighestBlitzScore")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("LastLoginDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastPlayedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("LastWeekArenaRank")
@@ -264,6 +276,51 @@ namespace NipponQuest.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("NipponQuest.Models.BlitzPersonalBest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Alphabet")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<double>("BestAccuracy")
+                        .HasColumnType("float");
+
+                    b.Property<int>("BestCombo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BestCorrect")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BestPoints")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId", "Difficulty", "Alphabet")
+                        .IsUnique();
+
+                    b.ToTable("BlitzPersonalBests");
+                });
+
             modelBuilder.Entity("NipponQuest.Models.Deck", b =>
                 {
                     b.Property<int>("Id")
@@ -272,10 +329,42 @@ namespace NipponQuest.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AuthorName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Dislikes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Downloads")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCommunityClone")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Likes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParentDeckId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThemeColor")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -287,6 +376,52 @@ namespace NipponQuest.Data.Migrations
                     b.ToTable("Decks");
                 });
 
+            modelBuilder.Entity("NipponQuest.Models.DeckPurchase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DeckId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeckPurchases");
+                });
+
+            modelBuilder.Entity("NipponQuest.Models.DeckVote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DeckId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsUpvote")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeckVotes");
+                });
+
             modelBuilder.Entity("NipponQuest.Models.Flashcard", b =>
                 {
                     b.Property<int>("Id")
@@ -296,7 +431,6 @@ namespace NipponQuest.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AudioFilePath")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BackText")
@@ -306,13 +440,27 @@ namespace NipponQuest.Data.Migrations
                     b.Property<int>("DeckId")
                         .HasColumnType("int");
 
+                    b.Property<double>("EaseFactor")
+                        .HasColumnType("float");
+
                     b.Property<string>("FrontText")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImageFilePath")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Interval")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastReviewed")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NextReview")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SuccessCount")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -346,6 +494,138 @@ namespace NipponQuest.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Hiraganas");
+                });
+
+            modelBuilder.Entity("NipponQuest.Models.KanaWord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Alphabet")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CategoryTag")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DifficultyLevel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DisplayHtml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("GeneratedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsAIGenerated")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MeaningEnglish")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MissingKana")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WordKana")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WordRomaji")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("KanaWords");
+                });
+
+            modelBuilder.Entity("NipponQuest.Models.LeaderboardEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateAchieved")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LeaderboardEntries");
+                });
+
+            modelBuilder.Entity("NipponQuest.Models.RewardLedger", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("EarnedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ExpDelta")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GoldDelta")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
+
+                    b.ToTable("RewardLedgers");
+                });
+
+            modelBuilder.Entity("NipponQuest.Models.UserColorPurchase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserColorPurchases");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -399,6 +679,17 @@ namespace NipponQuest.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("NipponQuest.Models.BlitzPersonalBest", b =>
+                {
+                    b.HasOne("NipponQuest.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("NipponQuest.Models.Flashcard", b =>
                 {
                     b.HasOne("NipponQuest.Models.Deck", "Deck")
@@ -408,6 +699,17 @@ namespace NipponQuest.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Deck");
+                });
+
+            modelBuilder.Entity("NipponQuest.Models.RewardLedger", b =>
+                {
+                    b.HasOne("NipponQuest.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NipponQuest.Models.Deck", b =>
