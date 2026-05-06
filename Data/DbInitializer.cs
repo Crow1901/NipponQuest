@@ -10,7 +10,7 @@ namespace NipponQuest.Data
     {
         public static void SeedKanaBlitzData(ApplicationDbContext context)
         {
-            context.Database.EnsureCreated();
+            //context.Database.EnsureCreated();
 
             var existingKeys = new HashSet<string>(
                 context.KanaWords
