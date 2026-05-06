@@ -36,8 +36,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (!string.IsNullOrEmpty(prodConnectionString))
     {
-        // Use PostgreSQL on Render
-        options.UseNpgsql(prodConnectionString);
+        // Convert Render's postgres:// URI into a valid key-value connection string for Npgsql
+        var formattedConnectionString = ConvertPostgresUriToConnectionString(prodConnectionString);
+        options.UseNpgsql(formattedConnectionString);
     }
     else
     {
@@ -59,12 +60,19 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => {
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // --- GOOGLE AUTHENTICATION ---
-builder.Services.AddAuthentication()
-    .AddGoogle(googleOptions =>
-    {
-        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-    });
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+// Safely register Google Auth only if configuration keys are present
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(googleOptions =>
+        {
+            googleOptions.ClientId = googleClientId;
+            googleOptions.ClientSecret = googleClientSecret;
+        });
+}
 
 // --- 4. CUSTOM SERVICE REGISTRATIONS ---
 builder.Services.AddScoped<GithubService>();
@@ -148,3 +156,18 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+
+// --- 9. URI PARSER HELPER METHOD ---
+static string ConvertPostgresUriToConnectionString(string uriString)
+{
+    var uri = new Uri(uriString);
+    var userInfo = uri.UserInfo.Split(':');
+    var username = userInfo[0];
+    var password = userInfo.Length > 1 ? userInfo[1] : "";
+    var host = uri.Host;
+    var port = uri.Port;
+    var database = uri.AbsolutePath.TrimStart('/');
+
+    // Formats URI variables into valid standard .NET key-value segments with secure production SSL requirements
+    return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
+}
