@@ -14,7 +14,6 @@ builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServe
 {
     options.Limits.MaxRequestBodySize = MaxFileSize;
 });
-
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = MaxFileSize;
@@ -26,11 +25,26 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 SQLitePCL.Batteries_V2.Init();
 
 // --- 2. DATABASE CONFIGURATION ---
+// 1. Get your fallback local connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+// 2. Check if Render has provided an environment variable connection string
+var prodConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (!string.IsNullOrEmpty(prodConnectionString))
+    {
+        // Use PostgreSQL on Render
+        options.UseNpgsql(prodConnectionString);
+    }
+    else
+    {
+        // Fall back to your local SQL Server for local development
+        options.UseSqlServer(connectionString);
+    }
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -81,7 +95,6 @@ builder.Services.AddQuartz(q =>
         .WithCronSchedule("0 5 0 * * ?")); // every day at 00:05
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
-
 builder.Services.AddHostedService<AIKanaGeneratorService>();
 
 // --- 6. BUILD APP ---
@@ -95,14 +108,13 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
 
-        // Apply any pending migrations
+        // Apply any pending migrations dynamically (PostgreSQL on Render / SQL Server locally)
         context.Database.Migrate();
 
         // Initialize standard seed data (Leagues, etc)
         SeedData.Initialize(services);
 
         // >>> KANA BLITZ SEEDING ADDED HERE <<<
-        // This populates the dictionary for the Easy, Normal, Hard, and Insanity modes
         DbInitializer.SeedKanaBlitzData(context);
     }
     catch (Exception ex)
@@ -125,12 +137,9 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.UseMiddleware<NipponQuest.Middleware.LoginStreakMiddleware>();
 
 app.MapControllerRoute(
