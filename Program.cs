@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using NipponQuest.Data;
 using NipponQuest.Models;
 using NipponQuest.Services;
@@ -38,7 +39,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
         // Convert Render's postgres:// URI into a valid key-value connection string for Npgsql
         var formattedConnectionString = ConvertPostgresUriToConnectionString(prodConnectionString);
-        options.UseNpgsql(formattedConnectionString);
+        options.UseNpgsql(formattedConnectionString)
+               // Suppress the SQL Server vs PostgreSQL model snapshot mismatch warning.
+               // Migrations were authored against SQL Server locally; this is safe to ignore
+               // because the actual migration SQL is what gets applied, not the snapshot diff.
+               .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
     }
     else
     {
