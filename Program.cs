@@ -94,7 +94,7 @@ builder.Services.AddQuartz(q =>
         .WithIdentity("WeeklyLeagueResetJob-trigger")
         .WithCronSchedule("0 0 0 ? * MON"));
 
-    // NEW: Streak Decay Job
+    // Streak Decay Job
     var streakJobKey = new JobKey("StreakDecayJob");
     q.AddJob<NipponQuest.Jobs.StreakDecayJob>(opts => opts.WithIdentity(streakJobKey));
     q.AddTrigger(opts => opts
@@ -112,23 +112,31 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
 
+        logger.LogInformation("Applying database migrations...");
+
         // Apply any pending migrations dynamically (PostgreSQL on Render / SQL Server locally)
         context.Database.Migrate();
+
+        logger.LogInformation("Migrations applied successfully.");
 
         // Initialize standard seed data (Leagues, etc)
         SeedData.Initialize(services);
 
-        // >>> KANA BLITZ SEEDING ADDED HERE <<<
+        // Kana Blitz seeding
         DbInitializer.SeedKanaBlitzData(context);
+
+        logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        logger.LogCritical(ex, "A critical error occurred during database migration or seeding. The application cannot start.");
+        // Rethrow so Render sees a failed deploy and doesn't serve a broken app
+        throw;
     }
 }
 
